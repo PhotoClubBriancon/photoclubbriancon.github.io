@@ -934,13 +934,24 @@ function sendContact(e) {
     result.style.color = 'var(--gold)';
     result.textContent = 'Envoi en cours...';
     
-    fetch('?page=contact', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'action=send_contact&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email) + '&message=' + encodeURIComponent(message)
-    })
-    .then(r => r.json())
-    .then(res => {
+    const isStatic = window.location.pathname.endsWith('.html') || window.location.hostname.includes('github.io');
+
+    let fetchPromise;
+    if (isStatic) {
+        fetchPromise = fetch('https://formsubmit.co/ajax/g.lhotte279@gmail.com', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+            body: JSON.stringify({name: name, email: email, message: message, _subject: 'Contact web Photo Club Brianconnais'})
+        }).then(r => r.json()).then(res => ({ok: res.success === 'true' || res.success === true}));
+    } else {
+        fetchPromise = fetch('?page=contact', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=send_contact&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email) + '&message=' + encodeURIComponent(message)
+        }).then(r => r.json());
+    }
+
+    fetchPromise.then(res => {
         if (res.ok) {
             result.style.background = 'rgba(30, 169, 124, 0.2)';
             result.style.color = '#1EA97C';
@@ -949,7 +960,7 @@ function sendContact(e) {
         } else {
             result.style.background = 'rgba(255, 87, 87, 0.2)';
             result.style.color = '#FF5757';
-            result.textContent = 'Erreur: ' + res.err;
+            result.textContent = 'Erreur: ' + (res.err || 'Envoi impossible');
         }
     })
     .catch(err => {
