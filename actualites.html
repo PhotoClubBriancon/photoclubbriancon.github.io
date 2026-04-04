@@ -68,13 +68,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
 .block-icon-btn.drag-handle { cursor: grab; }
 
 .block-image { border-radius: 12px; margin-bottom: 20px; transition: width 0.3s; }
-.block-image.left { float: left; margin-right: 24px; margin-bottom: 0; width: 300px; height: 300px; object-fit: cover; }
-.block-image.right { float: right; margin-left: 24px; margin-bottom: 0; width: 300px; height: 300px; object-fit: cover; }
+.block-image.left { float: left; margin-right: 24px; margin-bottom: 12px; object-fit: cover; }
+.block-image.right { float: right; margin-left: 24px; margin-bottom: 12px; object-fit: cover; }
 .block-image.top { width: 100%; margin-bottom: 20px; display: block; }
 .block-image.bottom { width: 100%; margin-top: 20px; display: block; }
-.block-image.small { max-width: 200px; height: auto; }
-.block-image.medium { max-width: 300px; height: auto; }
-.block-image.large { max-width: 400px; height: auto; }
+.block-image.small { max-width: 200px; width: 200px; height: auto; }
+.block-image.medium { max-width: 320px; width: 320px; height: auto; }
+.block-image.large { max-width: 440px; width: 440px; height: auto; }
+.block-image.xlarge { max-width: 560px; width: 560px; height: auto; }
+.block-image.xxlarge { max-width: 700px; width: 700px; height: auto; }
 .block-image.top, .block-image.bottom { max-width: 100% !important; width: 100% !important; height: auto !important; }
 
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
@@ -597,8 +599,8 @@ function editBlock(i) {
         }
         thumbnailsHtml += '</div>';
         
-        const imgSizes = ['small', 'medium', 'large'];
-        const imgSizeOptions = imgSizes.map(s => `<option value="${s}" ${(b.image_size || 'medium') === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)} (${s === 'small' ? '200px' : s === 'medium' ? '400px' : '600px'})</option>`).join('');
+        const imgSizeLabels = {small: 'Petit (200px)', medium: 'Moyen (320px)', large: 'Grand (440px)', xlarge: 'Très grand (560px)', xxlarge: 'Immense (700px)'};
+        const imgSizeOptions = Object.entries(imgSizeLabels).map(([s, label]) => `<option value="${s}" ${(b.image_size || 'medium') === s ? 'selected' : ''}>${label}</option>`).join('');
         
         html = `
             <div class="form-group">
