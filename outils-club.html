@@ -662,14 +662,17 @@ function editBlock(i) {
             </div>
             <div class="form-group" style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(212,175,55,0.1);">
                 <label>Contenu HTML</label>
-                <div style="display:flex;gap:4px;margin-bottom:8px;">
-                    <button type="button" onclick="formatText('bold')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;font-weight:bold;">B</button>
-                    <button type="button" onclick="formatText('italic')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;font-style:italic;">I</button>
-                    <button type="button" onclick="formatText('h2')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;">H2</button>
-                    <button type="button" onclick="formatText('h3')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;">H3</button>
-                    <button type="button" onclick="formatText('p')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;">P</button>
+                <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('bold')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;font-weight:bold;" title="Gras">B</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('italic')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;font-style:italic;" title="Italique">I</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('underline')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;text-decoration:underline;" title="Souligner">U</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('formatBlock',false,'<h2>')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;" title="Titre H2">H2</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('formatBlock',false,'<h3>')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;" title="Titre H3">H3</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="insertParagraph()" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;" title="Nouveau paragraphe">&#182; P</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;" title="Liste">&#8226;</button>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('removeFormat')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;opacity:.6;" title="Supprimer formatage">&#10005;</button>
                 </div>
-                <textarea id="edit-content" style="min-height:150px;">${b.content || ''}</textarea>
+                <div id="edit-content" contenteditable="true" style="min-height:150px;padding:12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:8px;color:var(--text);font-size:14px;line-height:1.6;overflow-y:auto;max-height:400px;outline:none;">${b.content || ''}</div>
             </div>
         `;
     }
@@ -699,7 +702,7 @@ function clearBlockImage() {
 
 function saveEdit(i) {
     const b = blocks[i];
-    b.content = document.getElementById('edit-content')?.value || b.content; 
+    b.content = document.getElementById('edit-content')?.innerHTML || b.content; 
     b.image = document.getElementById('edit-image')?.value || '';
     b.image_pos = document.getElementById('edit-image_pos')?.value || 'top';
     b.image_size = document.getElementById('edit-image_size')?.value || 'medium';
@@ -940,46 +943,18 @@ function uploadImageForBlock(blockIndex) {
     });
 }
 
-function formatText(type) {
-    const ta = document.getElementById('edit-content');
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const text = ta.value;
-    const selected = text.substring(start, end);
-    
-    let wrap = '';
-    let surround = '';
-    
-    switch(type) {
-        case 'bold':
-            wrap = '**';
-            break;
-        case 'italic':
-            wrap = '_';
-            break;
-        case 'h2':
-            surround = '\n<h2>';
-            wrap = '</h2>\n';
-            break;
-        case 'h3':
-            surround = '\n<h3>';
-            wrap = '</h3>\n';
-            break;
-        case 'p':
-            surround = '\n<p>';
-            wrap = '</p>\n';
-            break;
+// WYSIWYG helper: insert paragraph break at cursor position
+function insertParagraph() {
+    const editor = document.getElementById('edit-content');
+    if (!editor) return;
+    editor.focus();
+    // Try formatBlock first
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        // Insert two line breaks to create a visual paragraph separation
+        document.execCommand('insertParagraph', false, null);
     }
-    
-    if (surround) {
-        ta.value = text.substring(0, start) + surround + selected + wrap + text.substring(end);
-    } else if (selected) {
-        ta.value = text.substring(0, start) + wrap + selected + wrap + text.substring(end);
-    } else {
-        ta.value = text.substring(0, start) + wrap + 'texte' + wrap + text.substring(end);
-    }
-    
-    ta.focus();
 }
 
 function sendContact(e) {
