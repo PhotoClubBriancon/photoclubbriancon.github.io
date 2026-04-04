@@ -996,38 +996,60 @@ function sendContact(e) {
     
     const isStatic = window.location.pathname.endsWith('.html') || window.location.hostname.includes('github.io');
 
-    let fetchPromise;
     if (isStatic) {
-        fetchPromise = fetch('https://formsubmit.co/ajax/g.lhotte279@gmail.com', {
+        fetch('https://formsubmit.co/ajax/g.lhotte279@gmail.com', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
             body: JSON.stringify({name: name, email: email, message: message, _subject: 'Contact web Photo Club Brianconnais'})
-        }).then(r => r.json()).then(res => ({ok: res.success === 'true' || res.success === true}));
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success === 'true' || res.success === true) {
+                result.style.background = 'rgba(30, 169, 124, 0.2)';
+                result.style.color = '#1EA97C';
+                result.textContent = 'Message envoyé ! Nous vous répondrons bientôt.';
+                document.getElementById('contactForm').reset();
+            } else if (res.message && res.message.includes('Activation')) {
+                result.style.background = 'rgba(212, 175, 55, 0.2)';
+                result.style.color = 'var(--gold)';
+                result.textContent = 'Première utilisation : un email de confirmation a été envoyé au club. Le formulaire sera actif très bientôt !';
+                document.getElementById('contactForm').reset();
+            } else {
+                result.style.background = 'rgba(255, 87, 87, 0.2)';
+                result.style.color = '#FF5757';
+                result.textContent = 'Erreur: ' + (res.message || 'Envoi impossible');
+            }
+        })
+        .catch(err => {
+            result.style.background = 'rgba(255, 87, 87, 0.2)';
+            result.style.color = '#FF5757';
+            result.textContent = 'Erreur de connexion';
+        });
     } else {
-        fetchPromise = fetch('?page=contact', {
+        fetch('?page=contact', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: 'action=send_contact&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email) + '&message=' + encodeURIComponent(message)
-        }).then(r => r.json());
-    }
-
-    fetchPromise.then(res => {
-        if (res.ok) {
-            result.style.background = 'rgba(30, 169, 124, 0.2)';
-            result.style.color = '#1EA97C';
-            result.textContent = 'Message envoyé ! Nous vous répondrons bientôt.';
-            document.getElementById('contactForm').reset();
-        } else {
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.ok) {
+                result.style.background = 'rgba(30, 169, 124, 0.2)';
+                result.style.color = '#1EA97C';
+                result.textContent = 'Message envoyé ! Nous vous répondrons bientôt.';
+                document.getElementById('contactForm').reset();
+            } else {
+                result.style.background = 'rgba(255, 87, 87, 0.2)';
+                result.style.color = '#FF5757';
+                result.textContent = 'Erreur: ' + (res.err || 'Envoi impossible');
+            }
+        })
+        .catch(err => {
             result.style.background = 'rgba(255, 87, 87, 0.2)';
             result.style.color = '#FF5757';
-            result.textContent = 'Erreur: ' + (res.err || 'Envoi impossible');
-        }
-    })
-    .catch(err => {
-        result.style.background = 'rgba(255, 87, 87, 0.2)';
-        result.style.color = '#FF5757';
-        result.textContent = 'Erreur de connexion';
-    });
+            result.textContent = 'Erreur de connexion';
+        });
+    }
 }
 
 // Drag and drop
