@@ -58,6 +58,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
 .news-item { background: var(--dark-lighter); border-radius: 12px; padding: 28px; border-left: 3px solid var(--gold); }
 .news-item h3 { color: var(--gold); font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 6px; }
 .date { color: var(--gold-dark); font-size: .82rem; margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.content-btn { display: inline-block; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: .9rem; letter-spacing: .5px; cursor: pointer; transition: all 0.3s; margin: 8px 4px; }
+.content-btn.btn-style-gold { background: var(--gold); color: #111; }
+.content-btn.btn-style-gold:hover { background: #c9a420; transform: translateY(-2px); }
+.content-btn.btn-style-dark { background: #111; color: var(--gold); }
+.content-btn.btn-style-dark:hover { background: #222; transform: translateY(-2px); }
+.content-btn.btn-style-outline { background: transparent; color: var(--gold); border: 2px solid var(--gold); }
+.content-btn.btn-style-outline:hover { background: var(--gold); color: #111; transform: translateY(-2px); }
+.content-btn.btn-style-red { background: #c0392b; color: #fff; }
+.content-btn.btn-style-red:hover { background: #e74c3c; transform: translateY(-2px); }
 .news-item .block-image { display: block; width: 100%; max-width: 100%; height: auto; margin-bottom: 16px; border-radius: 8px; }
 
 .block-edit-bar { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; z-index: 10; }
@@ -633,6 +642,8 @@ function editBlock(i) {
                     <button type="button" onmousedown="event.preventDefault()" onclick="insertParagraph()" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;" title="Nouveau paragraphe">&#182; P</button>
                     <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;" title="Liste">&#8226;</button>
                     <button type="button" onmousedown="event.preventDefault()" onclick="document.execCommand('removeFormat')" style="padding:6px 12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:4px;color:var(--gold);cursor:pointer;opacity:.6;" title="Supprimer formatage">&#10005;</button>
+                    <span style="width:1px;height:20px;background:rgba(212,175,55,0.3);margin:0 4px;"></span>
+                    <button type="button" onmousedown="event.preventDefault()" onclick="showButtonInserter()" style="padding:6px 12px;background:var(--gold);border:1px solid rgba(212,175,55,0.5);border-radius:4px;color:#111;cursor:pointer;font-weight:600;font-size:12px;" title="Insérer un bouton cliquable">&#128279; Bouton</button>
                 </div>
                 <div id="edit-content" contenteditable="true" style="min-height:150px;padding:12px;background:var(--dark);border:1px solid rgba(212,175,55,0.3);border-radius:8px;color:var(--text);font-size:14px;line-height:1.6;overflow-y:auto;max-height:400px;outline:none;">${b.content || ''}</div>
             </div>
@@ -900,6 +911,101 @@ function uploadImageForBlock(blockIndex) {
             alert('Erreur: ' + res.err);
         }
     });
+}
+
+// WYSIWYG helper: insert a styled button/link into the content
+function showButtonInserter() {
+    // Remove existing popup if any
+    const existing = document.getElementById('btnInserterPopup');
+    if (existing) { existing.remove(); return; }
+
+    const popup = document.createElement('div');
+    popup.id = 'btnInserterPopup';
+    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a1a;border:1px solid rgba(212,175,55,0.4);border-radius:12px;padding:24px;z-index:3000;min-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.8);';
+    popup.innerHTML = `
+        <h4 style="color:var(--gold);margin-bottom:16px;font-family:'Playfair Display',serif;">Insérer un bouton</h4>
+        <div style="margin-bottom:12px;">
+            <label style="color:var(--text);font-size:13px;display:block;margin-bottom:4px;">Texte du bouton</label>
+            <input type="text" id="btnText" value="Voir plus" style="width:100%;padding:10px;background:#111;border:1px solid rgba(212,175,55,0.2);border-radius:6px;color:var(--text);font-size:14px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="color:var(--text);font-size:13px;display:block;margin-bottom:4px;">Destination</label>
+            <select id="btnDest" onchange="toggleCustomUrl()" style="width:100%;padding:10px;background:#111;border:1px solid rgba(212,175,55,0.2);border-radius:6px;color:var(--text);font-size:14px;box-sizing:border-box;">
+                <option value="?page=galerie">Galerie</option>
+                <option value="?page=actualites">Actualités</option>
+                <option value="?page=contact">Contact</option>
+                <option value="?page=accueil">Accueil</option>
+                <option value="?page=outils-club">Outils Club</option>
+                <option value="?page=le-club">Le Club</option>
+                <option value="custom">&#127760; URL personnalisée...</option>
+            </select>
+        </div>
+        <div id="customUrlDiv" style="display:none;margin-bottom:12px;">
+            <label style="color:var(--text);font-size:13px;display:block;margin-bottom:4px;">URL (ex: https://facebook.com/...)</label>
+            <input type="text" id="btnCustomUrl" placeholder="https://" style="width:100%;padding:10px;background:#111;border:1px solid rgba(212,175,55,0.2);border-radius:6px;color:var(--text);font-size:14px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="color:var(--text);font-size:13px;display:block;margin-bottom:8px;">Style</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <label style="cursor:pointer;"><input type="radio" name="btnStyle" value="gold" checked style="display:none;"><span class="content-btn btn-style-gold" style="padding:8px 16px;font-size:12px;">Doré</span></label>
+                <label style="cursor:pointer;"><input type="radio" name="btnStyle" value="dark" style="display:none;"><span class="content-btn btn-style-dark" style="padding:8px 16px;font-size:12px;">Sombre</span></label>
+                <label style="cursor:pointer;"><input type="radio" name="btnStyle" value="outline" style="display:none;"><span class="content-btn btn-style-outline" style="padding:8px 16px;font-size:12px;">Contour</span></label>
+                <label style="cursor:pointer;"><input type="radio" name="btnStyle" value="red" style="display:none;"><span class="content-btn btn-style-red" style="padding:8px 16px;font-size:12px;">Rouge</span></label>
+            </div>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="cursor:pointer;color:var(--text);font-size:13px;"><input type="checkbox" id="btnCenter" checked> Centrer le bouton</label>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <button onclick="doInsertButton()" class="btn btn-gold" style="flex:1;padding:10px;">Insérer</button>
+            <button onclick="document.getElementById('btnInserterPopup').remove()" class="btn btn-outline" style="flex:1;padding:10px;">Annuler</button>
+        </div>
+    `;
+    document.body.appendChild(popup);
+
+    // Highlight selected style
+    popup.querySelectorAll('input[name=btnStyle]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            popup.querySelectorAll('input[name=btnStyle]').forEach(r => {
+                r.parentElement.querySelector('span').style.outline = r.checked ? '2px solid var(--gold)' : 'none';
+                r.parentElement.querySelector('span').style.outlineOffset = r.checked ? '3px' : '0';
+            });
+        });
+        if (radio.checked) { radio.dispatchEvent(new Event('change')); }
+    });
+}
+
+function toggleCustomUrl() {
+    const sel = document.getElementById('btnDest');
+    document.getElementById('customUrlDiv').style.display = sel.value === 'custom' ? 'block' : 'none';
+}
+
+function doInsertButton() {
+    const text = document.getElementById('btnText').value.trim() || 'Bouton';
+    const dest = document.getElementById('btnDest').value;
+    const customUrl = document.getElementById('btnCustomUrl')?.value.trim() || '';
+    const style = document.querySelector('input[name=btnStyle]:checked')?.value || 'gold';
+    const center = document.getElementById('btnCenter')?.checked;
+
+    let href = dest === 'custom' ? customUrl : dest;
+    if (!href) { alert('Veuillez saisir une URL'); return; }
+
+    const isExternal = href.startsWith('http');
+    const target = isExternal ? ' target="_blank" rel="noopener"' : '';
+
+    let btnHtml = '<a href="' + href + '" class="content-btn btn-style-' + style + '"' + target + '>' + text + '</a>';
+    if (center) {
+        btnHtml = '<div style="text-align:center;margin:16px 0;">' + btnHtml + '</div>';
+    }
+
+    // Insert into contenteditable
+    const editor = document.getElementById('edit-content');
+    if (editor) {
+        editor.focus();
+        document.execCommand('insertHTML', false, btnHtml);
+    }
+
+    document.getElementById('btnInserterPopup').remove();
 }
 
 // WYSIWYG helper: insert paragraph break at cursor position
