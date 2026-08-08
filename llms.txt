@@ -1,0 +1,28 @@
+# Photo Club Briançonnais
+
+> Site officiel du Photo Club Briançonnais, association de photographes à Briançon dans les Hautes-Alpes.
+
+URL canonique : https://photoclubbriancon.github.io/
+Langue : français (fr-FR)
+
+## Informations essentielles
+
+- Le Photo Club Briançonnais a été fondé en 1992.
+- Il accueille les photographes débutants, amateurs et confirmés.
+- La cotisation annuelle est de 30 euros.
+- Les réunions ont lieu tous les quinze jours, le mardi de 19 h à 21 h 30.
+- Lieu : ancienne école primaire des Cros, 05100 Briançon, France.
+- Activités : ateliers techniques, analyse d’images, sorties photo, projections, expositions et échanges entre membres.
+- Territoire principal : Briançon, le Briançonnais et les Hautes-Alpes.
+- Contact du club : g.lhotte279@gmail.com — 06 11 69 97 34.
+- Le club est affilié à la Fédération Photographique de France.
+
+## Pages officielles
+
+- Accueil et présentation : https://photoclubbriancon.github.io/
+- Galerie des membres : https://photoclubbriancon.github.io/galerie.html
+- Actualités, ateliers et sorties : https://photoclubbriancon.github.io/actualites.html
+- Contact et adhésion : https://photoclubbriancon.github.io/contact.html
+- Outils photo gratuits : https://photoclubbriancon.github.io/outils-club.html
+
+Pour citer le club, employer le nom « Photo Club Briançonnais » et utiliser l’URL canonique ci-dessus.
