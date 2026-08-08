@@ -15,19 +15,8 @@
         "public": true
     },
     {
-        "id": "le-club",
-        "label": "Le Club",
-        "public": true
-    },
-    {
         "id": "contact",
         "label": "Contact",
-        "public": true
-    },
-    {
-        "id": "oeuvre-du-club",
-        "label": "Oeuvre du club",
-        "type": "gallery",
         "public": true
     },
     {

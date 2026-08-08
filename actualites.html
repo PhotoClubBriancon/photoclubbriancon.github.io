@@ -361,9 +361,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                         <li><a href="index.html" class="">Accueil</a></li>
                         <li><a href="galerie.html" class="">Galerie</a></li>
                         <li><a href="actualites.html" class="active" aria-current="page">Actualités</a></li>
-                        <li><a href="le-club.html" class="">Le Club</a></li>
                         <li><a href="contact.html" class="">Contact</a></li>
-                        <li><a href="oeuvre-du-club.html" class="">Oeuvre du club</a></li>
                         <li><a href="outils-club.html" class="">Outils Club</a></li>
                     </ul>
     </nav>
@@ -426,9 +424,7 @@ Jean-Luc animera ce cours et nous permettra de nous essayer concrètement à cet
                 <a href="index.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Accueil</a>
                 <a href="galerie.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Galerie</a>
                 <a href="actualites.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:1;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">Actualités</a>
-                <a href="le-club.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Le Club</a>
                 <a href="contact.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Contact</a>
-                <a href="oeuvre-du-club.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Oeuvre du club</a>
                 <a href="outils-club.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Outils Club</a>
             </nav>
     <p style="margin-top:12px;color:rgba(200,169,110,.5);font-size:.78rem;">Affilié à la Fédération Photographique de France · Fondé en 1992</p>
@@ -1560,7 +1556,7 @@ function sendContact(e) {
     result.textContent = 'Envoi en cours...';
 
     const isStatic = window.location.pathname.endsWith('.html') || window.location.hostname.includes('github.io');
-    const clubContactEmail = "contact@photoclub.fr";
+    const clubContactEmail = "g.lhotte279@gmail.com";
     const contactSubject = new URLSearchParams(window.location.search).get('motif') === 'inscription-septembre'
         ? 'Inscription septembre — Photo Club Briançonnais'
         : 'Contact web Photo Club Briançonnais';
