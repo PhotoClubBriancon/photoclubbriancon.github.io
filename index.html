@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="/images/generated/responsive/img_69ccb901e42bf-d15e4d0b01-1920.webp" fetchpriority="high"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="0d230273-4824-4405-bcf9-e560f6021ead" data-domains="photoclubbriancon.github.io"></script>
 <style>
 :root {
   --gold: #c8a96e; --gold-dark: #a8893e;
@@ -360,7 +361,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                         <li><a href="index.html" class="active" aria-current="page">Accueil</a></li>
                         <li><a href="galerie.html" class="">Galerie</a></li>
                         <li><a href="actualites.html" class="">Actualités</a></li>
+                        <li><a href="le-club.html" class="">Le Club</a></li>
                         <li><a href="contact.html" class="">Contact</a></li>
+                        <li><a href="oeuvre-du-club.html" class="">Oeuvre du club</a></li>
                         <li><a href="outils-club.html" class="">Outils Club</a></li>
                     </ul>
     </nav>
@@ -489,7 +492,9 @@ progresser ensemble dans une ambiance conviviale et inspirante.</p>             
                 <a href="index.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:1;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">Accueil</a>
                 <a href="galerie.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Galerie</a>
                 <a href="actualites.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Actualités</a>
+                <a href="le-club.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Le Club</a>
                 <a href="contact.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Contact</a>
+                <a href="oeuvre-du-club.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Oeuvre du club</a>
                 <a href="outils-club.html" style="color:var(--gold);text-decoration:none;font-size:.9rem;opacity:.7;transition:opacity .2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Outils Club</a>
             </nav>
     <p style="margin-top:12px;color:rgba(200,169,110,.5);font-size:.78rem;">Affilié à la Fédération Photographique de France · Fondé en 1992</p>
@@ -993,6 +998,29 @@ function saveConfig() {
         bing_verification: document.getElementById('cfg-bing_verification')?.value || '',
         meeting: document.getElementById('cfg-meeting').value
     });
+}
+
+function savePageVisibility() {
+    const visibility = {};
+    document.querySelectorAll('.page-visibility-toggle').forEach(input => {
+        if (!input.disabled) visibility[input.dataset.pageId] = input.checked;
+    });
+    const body = new URLSearchParams({
+        action: 'save_page_visibility',
+        visibility: JSON.stringify(visibility)
+    });
+    secureFetch('?page=' + encodeURIComponent(currentPage), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: body.toString()
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (!result.ok) throw new Error(result.err || 'Enregistrement impossible');
+        showToast('Visibilité des onglets enregistrée', true);
+        window.setTimeout(() => window.location.reload(), 650);
+    })
+    .catch(error => showToast(error.message || 'Erreur de visibilité', false));
 }
 
 function publishSite() {

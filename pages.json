@@ -1,27 +1,38 @@
 [
     {
         "id": "accueil",
-        "label": "Accueil"
+        "label": "Accueil",
+        "public": true
+    },
+    {
+        "id": "galerie",
+        "label": "Galerie",
+        "public": true
     },
     {
         "id": "actualites",
-        "label": "Actualites"
+        "label": "Actualités",
+        "public": true
     },
     {
         "id": "le-club",
-        "label": "Le Club"
+        "label": "Le Club",
+        "public": true
     },
     {
         "id": "contact",
-        "label": "Contact"
+        "label": "Contact",
+        "public": true
     },
     {
         "id": "oeuvre-du-club",
         "label": "Oeuvre du club",
-        "type": "gallery"
+        "type": "gallery",
+        "public": true
     },
     {
         "id": "outils-club",
-        "label": "Outils Club"
+        "label": "Outils Club",
+        "public": true
     }
 ]
