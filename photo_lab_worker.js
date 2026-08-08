@@ -102,6 +102,31 @@ function applyLook(pixels, preset) {
     return pixels;
 }
 
+function applyTonalAdjustments(pixels, highlights, shadows) {
+    const highlightAmount = clamp(Number(highlights) || 0, -100, 100) / 100;
+    const shadowAmount = clamp(Number(shadows) || 0, -100, 100) / 100;
+    if (highlightAmount === 0 && shadowAmount === 0) return pixels;
+
+    for (let index = 0; index < pixels.length; index += 4) {
+        const red = pixels[index] / 255;
+        const green = pixels[index + 1] / 255;
+        const blue = pixels[index + 2] / 255;
+        const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+        const highlightMask = luminance * luminance;
+        const shadowMask = (1 - luminance) * (1 - luminance);
+
+        for (let channel = 0; channel < 3; channel++) {
+            let value = pixels[index + channel] / 255;
+            if (shadowAmount >= 0) value += (1 - value) * shadowAmount * shadowMask * 0.68;
+            else value += value * shadowAmount * shadowMask * 0.68;
+            if (highlightAmount >= 0) value += (1 - value) * highlightAmount * highlightMask * 0.68;
+            else value += value * highlightAmount * highlightMask * 0.68;
+            pixels[index + channel] = clamp(value * 255, 0, 255);
+        }
+    }
+    return pixels;
+}
+
 self.onmessage = event => {
     const {id, width, height, buffer, settings} = event.data;
     try {
@@ -113,6 +138,7 @@ self.onmessage = event => {
             self.postMessage({id, progress: Math.round((pass + 1) / (denoise + 1) * 78)});
         }
         pixels = applyLook(pixels, settings.preset || 'natural');
+        pixels = applyTonalAdjustments(pixels, settings.highlights, settings.shadows);
         self.postMessage({id, progress: 96});
         self.postMessage({id, width, height, buffer: pixels.buffer}, [pixels.buffer]);
     } catch (error) {

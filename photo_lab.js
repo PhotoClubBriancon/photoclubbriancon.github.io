@@ -7,12 +7,20 @@
     const input = document.getElementById('photoLabInput');
     const drop = document.getElementById('photoLabDrop');
     const workspace = document.getElementById('photoLabWorkspace');
+    const preview = document.getElementById('photoLabPreview');
+    const previewStage = document.getElementById('photoLabPreviewStage');
     const originalCanvas = document.getElementById('photoLabOriginal');
     const processedCanvas = document.getElementById('photoLabProcessed');
     const compare = document.getElementById('photoLabCompare');
     const divider = document.getElementById('photoLabDivider');
     const denoise = document.getElementById('photoLabDenoise');
     const denoiseValue = document.getElementById('photoLabDenoiseValue');
+    const highlights = document.getElementById('photoLabHighlights');
+    const highlightsValue = document.getElementById('photoLabHighlightsValue');
+    const shadows = document.getElementById('photoLabShadows');
+    const shadowsValue = document.getElementById('photoLabShadowsValue');
+    const zoom = document.getElementById('photoLabZoom');
+    const zoomValue = document.getElementById('photoLabZoomValue');
     const quality = document.getElementById('photoLabQuality');
     const qualityValue = document.getElementById('photoLabQualityValue');
     const format = document.getElementById('photoLabFormat');
@@ -64,7 +72,12 @@
 
     function processImageData(imageData, onProgress) {
         const id = ++requestSequence;
-        const settings = {preset, denoise: Number(denoise.value)};
+        const settings = {
+            preset,
+            denoise: Number(denoise.value),
+            highlights: Number(highlights.value),
+            shadows: Number(shadows.value),
+        };
         return new Promise((resolve, reject) => {
             pending.set(id, {resolve, reject, onProgress});
             worker.postMessage({
@@ -119,6 +132,22 @@
         previewTimer = window.setTimeout(updatePreview, 140);
     }
 
+    function signedValue(value) {
+        const number = Number(value);
+        return number > 0 ? `+${number}` : String(number);
+    }
+
+    function updateZoom() {
+        const scale = Number(zoom.value) / 100;
+        previewStage.style.width = `${scale * 100}%`;
+        previewStage.style.height = `${scale * 100}%`;
+        zoomValue.value = scale === 1 ? 'Ajusté à l’écran' : `${zoom.value} %`;
+        if (scale <= 1) {
+            preview.scrollLeft = 0;
+            preview.scrollTop = 0;
+        }
+    }
+
     async function openFile(file) {
         if (!file) return;
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
@@ -145,6 +174,8 @@
             processedCanvas.getContext('2d').drawImage(originalCanvas, 0, 0);
             workspace.style.display = 'block';
             drop.style.display = 'none';
+            zoom.value = '100';
+            updateZoom();
             await updatePreview();
         } catch (error) {
             setStatus(error.message || 'Impossible de lire cette photographie.', true);
@@ -215,6 +246,10 @@
         divider.style.left = `${compare.value}%`;
     });
     denoise.addEventListener('input', () => { denoiseValue.value = denoiseLabels[Number(denoise.value)]; schedulePreview(); });
+    highlights.addEventListener('input', () => { highlightsValue.value = signedValue(highlights.value); schedulePreview(); });
+    shadows.addEventListener('input', () => { shadowsValue.value = signedValue(shadows.value); schedulePreview(); });
+    zoom.addEventListener('input', updateZoom);
+    preview.addEventListener('dblclick', () => { zoom.value = '100'; updateZoom(); });
     quality.addEventListener('input', () => { qualityValue.value = `${quality.value} %`; });
     format.addEventListener('change', () => { quality.disabled = format.value === 'image/png'; });
     root.querySelectorAll('[data-photo-preset]').forEach(button => button.addEventListener('click', () => {
