@@ -316,6 +316,29 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .analytics-status { min-height:22px; margin-top:12px; color:var(--text-dim); font-size:.88rem; }
 .analytics-loading { opacity:.55; pointer-events:none; }
 .analytics-empty { color:var(--text-dim); text-align:center; padding:55px 12px; }
+.photo-lab { max-width:1000px; margin:0 auto 32px; padding:clamp(18px,3vw,30px); background:linear-gradient(145deg,#1b1a18,#111); border:1px solid rgba(212,175,55,.22); border-radius:18px; }
+.photo-lab-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; flex-wrap:wrap; margin-bottom:20px; }
+.photo-lab-badge { color:#79d9b4; background:rgba(30,169,124,.12); border:1px solid rgba(30,169,124,.32); border-radius:999px; padding:7px 12px; font-size:.76rem; white-space:nowrap; }
+.photo-lab-drop { display:block; border:1px dashed rgba(212,175,55,.5); border-radius:14px; padding:24px; text-align:center; cursor:pointer; background:rgba(212,175,55,.04); transition:.2s; }
+.photo-lab-drop:hover,.photo-lab-drop.dragover { border-color:var(--gold); background:rgba(212,175,55,.1); }
+.photo-lab-workspace { display:none; margin-top:22px; }
+.photo-lab-preview { position:relative; width:100%; overflow:hidden; border-radius:14px; background:#080808; min-height:260px; display:grid; place-items:center; }
+.photo-lab-preview canvas { display:block; max-width:100%; height:auto; grid-area:1/1; }
+.photo-lab-preview .processed { clip-path:inset(0 0 0 50%); }
+.photo-lab-divider { position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.5); pointer-events:none; }
+.photo-lab-divider::before { content:'↔'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:#17120a; font-weight:800; }
+.photo-lab-compare { width:100%; accent-color:var(--gold); margin:14px 0 4px; }
+.photo-lab-controls { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(240px,.8fr); gap:18px; margin-top:18px; }
+.photo-lab-panel { background:#101010; border:1px solid rgba(212,175,55,.15); border-radius:13px; padding:16px; }
+.photo-lab-presets { display:flex; flex-wrap:wrap; gap:8px; }
+.photo-lab-preset { border:1px solid rgba(212,175,55,.3); color:var(--text); background:#191919; padding:9px 12px; border-radius:999px; cursor:pointer; font:inherit; font-size:.82rem; }
+.photo-lab-preset.active { background:var(--gold); color:#17120a; border-color:var(--gold); font-weight:700; }
+.photo-lab-row { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; margin-top:14px; }
+.photo-lab-row input[type=range] { grid-column:1/-1; width:100%; accent-color:var(--gold); }
+.photo-lab-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center; }
+.photo-lab-status { color:var(--text-dim); min-height:22px; font-size:.84rem; margin-top:12px; }
+.photo-lab-progress { height:5px; border-radius:5px; background:#292826; overflow:hidden; display:none; margin-top:8px; }
+.photo-lab-progress span { display:block; width:0; height:100%; background:linear-gradient(90deg,var(--gold),#74dcb8); transition:width .2s; }
 .dashboard-shell { max-width:1100px; margin:0 auto 38px; }
 .dashboard-toolbar { display:flex; justify-content:space-between; gap:16px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
 .dashboard-health { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:18px; }
@@ -331,6 +354,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .dashboard-sync-message { font-family:'Playfair Display',serif; color:var(--gold); font-size:1.22rem; margin-bottom:5px; }
 .dashboard-updated { color:var(--text-dim); font-size:.8rem; }
 @media (max-width:900px) { .analytics-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .analytics-grid { grid-template-columns:1fr; } }
+@media (max-width:760px) { .photo-lab-controls { grid-template-columns:1fr; } .photo-lab-preview { min-height:180px; } }
 @media (max-width:900px) { .dashboard-health { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .analytics-fields { grid-template-columns:1fr; } .analytics-card-value { font-size:1.55rem; } .analytics-panel { padding:15px; } }
 @media (max-width:520px) { .dashboard-health { grid-template-columns:1fr; } }
@@ -388,6 +412,68 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
         <p style="color:var(--text-dim);margin-bottom:40px;">Outils pratiques pour les membres du Photo Club Brianconnais.</p>
 
         
+        <section class="photo-lab" id="photoLab">
+            <div class="photo-lab-head">
+                <div>
+                    <h2 style="font-family:'Playfair Display',serif;color:var(--gold);margin:0 0 7px;">&#10024; Laboratoire photo</h2>
+                    <p style="color:var(--text-dim);margin:0;line-height:1.6;">Réglage automatique, noir et blanc et réduction du bruit directement dans votre navigateur.</p>
+                </div>
+                <span class="photo-lab-badge">Photo traitée localement · aucun envoi</span>
+            </div>
+
+            <label class="photo-lab-drop" id="photoLabDrop" for="photoLabInput">
+                <strong style="color:var(--gold);display:block;margin-bottom:6px;">Choisir ou déposer une photo</strong>
+                <span style="color:var(--text-dim);font-size:.86rem;">JPEG, PNG ou WebP · 50 mégapixels maximum</span>
+                <input id="photoLabInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            </label>
+
+            <div class="photo-lab-workspace" id="photoLabWorkspace">
+                <div class="photo-lab-preview" id="photoLabPreview">
+                    <canvas id="photoLabOriginal" aria-label="Photographie originale"></canvas>
+                    <canvas id="photoLabProcessed" class="processed" aria-label="Photographie traitée"></canvas>
+                    <span class="photo-lab-divider" id="photoLabDivider" aria-hidden="true"></span>
+                </div>
+                <label for="photoLabCompare" style="display:block;color:var(--text-dim);font-size:.78rem;margin-top:10px;">Comparaison avant / après</label>
+                <input class="photo-lab-compare" id="photoLabCompare" type="range" min="0" max="100" value="50">
+
+                <div class="photo-lab-controls">
+                    <div class="photo-lab-panel">
+                        <strong style="color:var(--gold);display:block;margin-bottom:12px;">Rendu</strong>
+                        <div class="photo-lab-presets" role="group" aria-label="Réglage photographique">
+                            <button type="button" class="photo-lab-preset active" data-photo-preset="natural">Auto naturel</button>
+                            <button type="button" class="photo-lab-preset" data-photo-preset="dynamic">Auto dynamique</button>
+                            <button type="button" class="photo-lab-preset" data-photo-preset="bw">Noir &amp; blanc</button>
+                            <button type="button" class="photo-lab-preset" data-photo-preset="bw-contrast">N&amp;B contrasté</button>
+                            <button type="button" class="photo-lab-preset" data-photo-preset="none">Original</button>
+                        </div>
+                        <div class="photo-lab-row">
+                            <label for="photoLabDenoise">Débruitage</label><output id="photoLabDenoiseValue">Moyen</output>
+                            <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="2">
+                        </div>
+                    </div>
+                    <div class="photo-lab-panel">
+                        <strong style="color:var(--gold);display:block;margin-bottom:12px;">Export</strong>
+                        <label for="photoLabFormat" style="display:block;color:var(--text-dim);font-size:.78rem;margin-bottom:5px;">Format</label>
+                        <select id="photoLabFormat" style="width:100%;padding:10px;background:#171717;color:var(--text);border:1px solid rgba(212,175,55,.28);border-radius:8px;">
+                            <option value="image/jpeg">JPEG haute qualité</option>
+                            <option value="image/webp">WebP léger</option>
+                            <option value="image/png">PNG sans perte</option>
+                        </select>
+                        <div class="photo-lab-row">
+                            <label for="photoLabQuality">Qualité</label><output id="photoLabQualityValue">92 %</output>
+                            <input id="photoLabQuality" type="range" min="70" max="100" step="1" value="92">
+                        </div>
+                    </div>
+                </div>
+                <div class="photo-lab-actions">
+                    <button type="button" class="btn btn-gold" id="photoLabDownload">Télécharger jusqu’à 4K</button>
+                    <button type="button" class="btn btn-outline" id="photoLabClear">Choisir une autre photo</button>
+                </div>
+                <div class="photo-lab-status" id="photoLabStatus" role="status" aria-live="polite">Aperçu prêt.</div>
+                <div class="photo-lab-progress" id="photoLabProgress"><span></span></div>
+            </div>
+        </section>
+
         <div class="block" style="max-width:800px;margin:0 auto 32px;">
             <h2>&#128247; Redimensionner une image</h2>
             <p style="color:var(--text-dim);margin-bottom:24px;">
@@ -852,7 +938,8 @@ function nextImage(e) {
 }
 
 document.addEventListener('keydown', function(e) {
-    if (!document.getElementById('lightbox').classList.contains('active')) return;
+    const lightbox = document.getElementById('lightbox');
+    if (!lightbox || !lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') prevImage(e);
     if (e.key === 'ArrowRight') nextImage(e);
@@ -1832,6 +1919,8 @@ function deleteGalleryImage(path) {
     });
 }
 </script>
+
+<script src="/photo_lab.js" defer></script>
 
 </body>
 </html>
