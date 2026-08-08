@@ -917,6 +917,7 @@ let currentHeight = 60;
 let currentPosition = 0;
 let currentOpacity = 0.4;
 const currentPage = "galerie";
+const publicPageDestinations = [{"id":"accueil","label":"Accueil"},{"id":"galerie","label":"Galerie"},{"id":"actualites","label":"Actualités"},{"id":"contact","label":"Contact"},{"id":"outils-club","label":"Outils Club"}];
 let chatConversation = '';
 let chatMessageCount = 0;
 
@@ -1520,6 +1521,12 @@ function showButtonInserter() {
     if (existing) { existing.remove(); return; }
 
     const popup = document.createElement('div');
+    const destinationOptions = publicPageDestinations.map(page => {
+        const option = document.createElement('option');
+        option.value = '?page=' + page.id;
+        option.textContent = page.label;
+        return option.outerHTML;
+    }).join('');
     popup.id = 'btnInserterPopup';
     popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a1a;border:1px solid rgba(212,175,55,0.4);border-radius:12px;padding:24px;z-index:3000;min-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.8);';
     popup.innerHTML = `
@@ -1531,12 +1538,7 @@ function showButtonInserter() {
         <div style="margin-bottom:12px;">
             <label style="color:var(--text);font-size:13px;display:block;margin-bottom:4px;">Destination</label>
             <select id="btnDest" onchange="toggleCustomUrl()" style="width:100%;padding:10px;background:#111;border:1px solid rgba(212,175,55,0.2);border-radius:6px;color:var(--text);font-size:14px;box-sizing:border-box;">
-                <option value="?page=galerie">Galerie</option>
-                <option value="?page=actualites">Actualités</option>
-                <option value="?page=contact">Contact</option>
-                <option value="?page=accueil">Accueil</option>
-                <option value="?page=outils-club">Outils Club</option>
-                <option value="?page=le-club">Le Club</option>
+                ${destinationOptions}
                 <option value="custom">&#127760; URL personnalisée...</option>
             </select>
         </div>
