@@ -3,15 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="">
+<meta name="description" content="Découvrez une sélection de photographies réalisées par les membres du Photo Club Briançonnais.">
+<meta name="theme-color" content="#111010">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; connect-src 'self' https://formsubmit.co"><meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="Photo Club Brianconnais">
+<meta property="og:title" content="Galerie photo — Photo Club Brianconnais">
+<meta property="og:description" content="Découvrez une sélection de photographies réalisées par les membres du Photo Club Briançonnais.">
+<meta property="og:url" content="https://photoclubbriancon.github.io/galerie.html">
+<link rel="canonical" href="https://photoclubbriancon.github.io/galerie.html">
 <!-- Meta verification (remplissez les valeurs dans l'editeur) -->
 <meta name="google-site-verification" content="2X6rSncCvKmhSFhvL3Mu6fJ6QeHtTfl4b-lRp2nyrn4">
-<meta name="msvalidate.01" content="">
-<meta name="yandex-verification" content="">
-<meta name="facebook-domain-verification" content="">
-<meta name="p:domain_verify" content="">
-<title>Photo Club Brianconnais</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Galerie photo — Photo Club Brianconnais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="/images/img_69ccb901e42bf.jpg" fetchpriority="high"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
   --gold: #c8a96e; --gold-dark: #a8893e;
@@ -20,7 +26,10 @@
   --bg: #f7f4f0; --accent: #c8a96e;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--text); line-height: 1.7; }
+img { max-width: 100%; }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 
 .header { background: var(--dark); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(200,169,110,.3); padding: 0 32px; height: 70px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; }
 .header-logo { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 14px; text-decoration: none; }
@@ -36,7 +45,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
 .hero-preview .preview-label { position: absolute; top: 8px; left: 8px; background: var(--gold); color: #000; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
 
 .hero { position: relative; min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 140px 24px 80px; }
-.hero { background-image: url('images/img_69ccb901e42bf.jpg'); background-size: cover; background-position: center 0%; }
+.hero.page-hero { min-height: min(45vh, 460px); padding-bottom: 60px; }
+.hero { background-image: url('/images/img_69ccb901e42bf.jpg'); background-size: cover; background-position: center 0%; }
 .hero::before { content: ''; position: absolute; inset: 0; background: rgba(10,10,10,0.4); pointer-events: none; }
 .hero > * { position: relative; z-index: 1; }
 .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.4rem,5vw,4rem); font-weight: 700; color: var(--gold); margin-bottom: 16px; text-shadow: 0 0 40px rgba(200,169,110,.25); max-width: 800px; line-height: 1.15; }
@@ -89,11 +99,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
 .block-image.top, .block-image.bottom { max-width: 100% !important; width: 100% !important; height: auto !important; }
 
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-.gallery-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: zoom-in; border: 2px solid transparent; transition: all .3s; position: relative; }
+.gallery-item { appearance: none; width: 100%; background: transparent; padding: 0; aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: zoom-in; border: 2px solid transparent; transition: all .3s; position: relative; }
 .gallery-item:hover { border-color: var(--gold); transform: scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
 .contact-form { max-width: 600px; margin: 0 auto; }
+.contact-note { margin-top: 18px; color: var(--text-dim); font-size: .82rem; line-height: 1.6; }
+.contact-note a { color: var(--gold); }
+.honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; color: var(--gold); font-weight: 500; margin-bottom: 8px; }
 .form-group input, .form-group textarea { width: 100%; padding: 14px 18px; background: var(--dark-lighter); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 10px; color: var(--text); font-size: 16px; font-family: inherit; }
@@ -166,13 +179,76 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
 .footer p { color: var(--text-dim); font-size: .85rem; margin-top: 4px; }
 
 .mobile-menu-btn { display: none; background: none; border: none; color: var(--gold); font-size: 28px; cursor: pointer; }
+.resize-options-grid { margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+
+/* Campagne d'adhésion — rentrée 2026 */
+.join-campaign { padding: 64px 32px 16px; background: radial-gradient(circle at 80% 10%, rgba(212,175,55,.11), transparent 42%); }
+.join-campaign-card { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: minmax(300px, .9fr) minmax(0, 1.1fr); overflow: hidden; border: 1px solid rgba(212,175,55,.3); border-radius: 28px; background: linear-gradient(145deg, rgba(28,27,25,.98), rgba(13,13,13,.98)); box-shadow: 0 28px 80px rgba(0,0,0,.35); }
+.join-campaign-visual { min-height: 530px; position: relative; overflow: hidden; }
+.join-campaign-visual::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 45%, rgba(20,19,18,.85) 100%); }
+.join-campaign-visual img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; object-position: 50% 58%; }
+.join-campaign-badge { position: absolute; z-index: 1; top: 24px; left: 24px; padding: 9px 14px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(10,10,10,.66); backdrop-filter: blur(10px); color: #fff; font-size: .72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+.join-campaign-copy { padding: clamp(36px, 5vw, 72px); display: flex; flex-direction: column; justify-content: center; }
+.join-campaign-eyebrow { color: var(--gold); font-size: .75rem; font-weight: 700; letter-spacing: 2.2px; text-transform: uppercase; }
+.join-campaign-copy h2 { margin: 14px 0 18px; font-family: 'Playfair Display', serif; color: var(--text); font-size: clamp(2.15rem, 4.3vw, 4rem); line-height: 1.02; }
+.join-campaign-copy > p { color: var(--text-dim); font-size: 1.04rem; line-height: 1.75; }
+.join-price-row { margin: 28px 0; display: flex; align-items: center; gap: 24px; }
+.join-price { min-width: 164px; padding: 18px 22px; display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: 9px; border-radius: 18px; background: linear-gradient(135deg, var(--gold), #f0cf72); color: #15130f; box-shadow: 0 12px 34px rgba(212,175,55,.2); }
+.join-price strong { font-family: 'Playfair Display', serif; font-size: 3rem; line-height: .9; }
+.join-price span { font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+.join-price small { grid-column: 1 / -1; margin-top: 8px; font-weight: 700; opacity: .75; }
+.join-price-note { color: var(--text); font-weight: 600; line-height: 1.5; }
+.join-benefits { margin: 0 0 30px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; list-style: none; }
+.join-benefits li { padding: 13px 10px; border: 1px solid rgba(212,175,55,.16); border-radius: 12px; background: rgba(255,255,255,.025); color: var(--text-dim); text-align: center; font-size: .84rem; }
+.join-campaign-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.join-campaign-actions .btn { text-decoration: none; }
+.join-reassurance { width: 100%; margin-top: 4px; color: rgba(255,255,255,.48); font-size: .78rem; }
+.join-prompt { width: min(390px, calc(100vw - 32px)); position: fixed; z-index: 1800; right: 22px; bottom: 22px; padding: 22px; display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; border: 1px solid rgba(212,175,55,.42); border-radius: 20px; background: rgba(18,17,16,.96); box-shadow: 0 24px 70px rgba(0,0,0,.5); backdrop-filter: blur(14px); opacity: 0; transform: translateY(18px); transition: opacity .35s ease, transform .35s ease; }
+.join-prompt[hidden] { display: none; }
+.join-prompt.is-visible { opacity: 1; transform: translateY(0); }
+.join-prompt-price { grid-row: 1 / 4; width: 82px; height: 82px; display: grid; place-content: center; border-radius: 50%; background: var(--gold); color: #15130f; text-align: center; }
+.join-prompt-price strong { font-family: 'Playfair Display', serif; font-size: 1.65rem; line-height: 1; }
+.join-prompt-price span { margin-top: 2px; font-size: .65rem; font-weight: 800; text-transform: uppercase; }
+.join-prompt-kicker { color: var(--gold); font-size: .68rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; }
+.join-prompt p { margin: 2px 28px 5px 0; color: var(--text); line-height: 1.4; }
+.join-prompt a { color: var(--gold); font-size: .84rem; font-weight: 700; text-decoration: none; }
+.join-prompt-close { position: absolute; top: 9px; right: 10px; width: 32px; height: 32px; border: 0; background: none; color: var(--text-dim); font-size: 22px; cursor: pointer; }
 @media (max-width: 768px) {
+    .header { padding: 0 16px; }
+    .header-logo { font-size: 1rem; gap: 10px; }
     .mobile-menu-btn { display: block; }
     .nav-menu { display: none; position: absolute; top: 70px; left: 0; right: 0; background: var(--dark-light); flex-direction: column; padding: 16px; border-top: 1px solid rgba(212, 175, 55, 0.2); }
     .nav-menu.open { display: flex; }
-    .hero h1 { font-size: 32px; }
+    .hero { min-height: 60vh; padding: 110px 20px 56px; }
+    .hero.page-hero { min-height: 38vh; padding-bottom: 44px; }
+    .hero h1 { font-size: clamp(2rem, 10vw, 2.7rem); }
+    .content { padding: 44px 16px 72px; }
     .block { padding: 24px; }
+    .block-image.left, .block-image.right { float: none; width: 100%; max-width: 100%; margin: 0 0 20px; }
+    .block input[type="file"] { min-width: 0; max-width: 100%; }
+    .join-campaign { padding: 40px 16px 8px; }
+    .join-campaign-card { grid-template-columns: 1fr; border-radius: 22px; }
+    .join-campaign-visual { min-height: 310px; }
+    .join-campaign-visual::after { background: linear-gradient(0deg, rgba(20,19,18,.92), transparent 60%); }
+    .join-campaign-copy { padding: 32px 24px 36px; }
+    .join-price-row { align-items: stretch; flex-direction: column; gap: 14px; }
+    .join-price { width: 100%; min-width: 0; justify-content: center; }
+    .join-price-note { text-align: center; }
+    .join-benefits { grid-template-columns: 1fr; }
+    .join-campaign-actions { align-items: stretch; flex-direction: column; }
+    .join-campaign-actions .btn { width: 100%; text-align: center; }
+    .join-reassurance { text-align: center; }
+    .join-prompt { right: 16px; bottom: 16px; padding: 18px; grid-template-columns: 68px 1fr; }
+    .join-prompt-price { width: 68px; height: 68px; }
+    .resize-options-grid { grid-template-columns: 1fr; }
+    .lightbox-nav { font-size: 28px; padding: 8px 12px; }
+    .lightbox-nav.prev { left: 4px; }
+    .lightbox-nav.next { right: 4px; }
     .editor-panel { width: 100%; left: -100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 .site-watermark { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--gold); opacity: 0.5; }
 
@@ -229,11 +305,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
         <div>
           Photo Club Brianconnais        </div>
     </a>
-    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">&#9776;</button>
-    <nav>
+    <button type="button" class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Ouvrir le menu" aria-controls="navMenu" aria-expanded="false">&#9776;</button>
+    <nav aria-label="Navigation principale">
         <ul class="nav-menu" id="navMenu">
                         <li><a href="index.html" class="">Accueil</a></li>
-                        <li><a href="galerie.html" class="active">Galerie</a></li>
+                        <li><a href="galerie.html" class="active" aria-current="page">Galerie</a></li>
                         <li><a href="actualites.html" class="">Actualités</a></li>
                         <li><a href="contact.html" class="">Contact</a></li>
                         <li><a href="outils-club.html" class="">Outils Club</a></li>
@@ -241,135 +317,129 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
     </nav>
 </header>
 
-<section class="hero" id="heroSection">
+<section class="hero page-hero" id="heroSection" aria-labelledby="page-title">
     <div style="position:relative;z-index:1;text-align:center;max-width:800px;margin:0 auto;">
-            <h1>Photo Club Brianconnais</h1>
+            <h1 id="page-title">Galerie photo</h1>
                       </div>
 </section>
 
-<div style="background:var(--gold);padding:16px 32px;">
-  <div style="max-width:1100px;margin:0 auto;display:flex;justify-content:center;gap:60px;flex-wrap:wrap;">
-    <div style="text-align:center;color:#111;"><span style="font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;display:block;margin-bottom:2px;">Fondé en</span><span style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;display:block;line-height:1;">1992</span></div>
-    <div style="text-align:center;color:#111;"><span style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;display:block;line-height:1;">2×</span><span style="font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;">par mois</span></div>
-    <div style="text-align:center;color:#111;"><span style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;display:block;line-height:1;">FFP</span><span style="font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;">Affilié</span></div>
-    <div style="text-align:center;color:#111;"><span style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;display:block;line-height:1;">∞</span><span style="font-size:.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;">Tous niveaux</span></div>
-  </div>
-</div>
+
+
 <main class="content" id="blocksContainer">
-        
-        
-            
-        
-    <div class="gallery-grid" id="galleryGrid">
-                <div class="gallery-item" onclick="openLightbox(0)" style="position:relative;">
-            <img src="images/img_69ccb901e42bf.jpg" alt="" data-index="0">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(1)" style="position:relative;">
-            <img src="images/img_69ccbc5d34f0c.jpg" alt="" data-index="1">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(2)" style="position:relative;">
-            <img src="images/img_69ccc9f260e9e.jpg" alt="" data-index="2">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(3)" style="position:relative;">
-            <img src="images/img_69ccc0d38df55.jpg" alt="" data-index="3">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(4)" style="position:relative;">
-            <img src="images/img_69ccbd36d3c58.jpg" alt="" data-index="4">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(5)" style="position:relative;">
-            <img src="images/img_69ccbc70f11fa.jpg" alt="" data-index="5">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(6)" style="position:relative;">
-            <img src="images/img_69ccbc683a72d.jpg" alt="" data-index="6">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(7)" style="position:relative;">
-            <img src="images/img_69cccae4eb166.jpg" alt="" data-index="7">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(8)" style="position:relative;">
-            <img src="images/img_69cccb0f97640.jpg" alt="" data-index="8">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(9)" style="position:relative;">
-            <img src="images/img_69cccb2b61e28.jpg" alt="" data-index="9">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(10)" style="position:relative;">
-            <img src="images/img_69cccb39442dc.jpg" alt="" data-index="10">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(11)" style="position:relative;">
-            <img src="images/img_69cccb3e2365f.jpg" alt="" data-index="11">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(12)" style="position:relative;">
-            <img src="images/img_69cccb4539d57.jpg" alt="" data-index="12">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(13)" style="position:relative;">
-            <img src="images/img_69cccb4c7fd0b.jpg" alt="" data-index="13">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(14)" style="position:relative;">
-            <img src="images/img_69cccb5633da3.jpg" alt="" data-index="14">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(15)" style="position:relative;">
-            <img src="images/img_69cccb68c2ef5.jpg" alt="" data-index="15">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(16)" style="position:relative;">
-            <img src="images/img_69cccb6e710e1.jpg" alt="" data-index="16">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(17)" style="position:relative;">
-            <img src="images/img_69cccb731e1d0.jpg" alt="" data-index="17">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(18)" style="position:relative;">
-            <img src="images/img_69cccba5ef436.jpg" alt="" data-index="18">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(19)" style="position:relative;">
-            <img src="images/img_69cccba271855.jpg" alt="" data-index="19">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(20)" style="position:relative;">
-            <img src="images/img_69cccb87364f8.jpg" alt="" data-index="20">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(21)" style="position:relative;">
-            <img src="images/img_69cccb81c2fd8.jpg" alt="" data-index="21">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(22)" style="position:relative;">
-            <img src="images/img_69cccb7d98bc8.jpg" alt="" data-index="22">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(23)" style="position:relative;">
-            <img src="images/img_69cccb76817af.jpg" alt="" data-index="23">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(24)" style="position:relative;">
-            <img src="images/img_69cccbb1b6575.jpg" alt="" data-index="24">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(25)" style="position:relative;">
-            <img src="images/img_69cd499ab57af.jpg" alt="" data-index="25">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(26)" style="position:relative;">
-            <img src="images/img_69cd538864850.jpg" alt="" data-index="26">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(27)" style="position:relative;">
-            <img src="images/img_69cd7d741af45.jpg" alt="" data-index="27">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(28)" style="position:relative;">
-            <img src="images/img_69ccb8e438610.jpg" alt="" data-index="28">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(29)" style="position:relative;">
-            <img src="images/img_69cd584e82fb3.jpg" alt="" data-index="29">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(30)" style="position:relative;">
-            <img src="images/img_69ccb8f6cd896.jpg" alt="" data-index="30">
-                    </div>
-                <div class="gallery-item" onclick="openLightbox(31)" style="position:relative;">
-            <img src="images/img_69cccab6ddf89.jpg" alt="" data-index="31">
-                    </div>
-                    </div>
     
+    
+        
+    
+    <div class="gallery-grid" id="galleryGrid">
+                        <button type="button" class="gallery-item" onclick="openLightbox(0)" aria-label="Agrandir : Photographie du club — image 1" style="position:relative;">
+            <img src="/images/img_69ccb901e42bf.jpg" alt="Photographie du club — image 1" data-index="0" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(1)" aria-label="Agrandir : Photographie du club — image 2" style="position:relative;">
+            <img src="/images/img_69ccbc5d34f0c.jpg" alt="Photographie du club — image 2" data-index="1" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(2)" aria-label="Agrandir : Photographie du club — image 3" style="position:relative;">
+            <img src="/images/img_69ccc9f260e9e.jpg" alt="Photographie du club — image 3" data-index="2" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(3)" aria-label="Agrandir : Photographie du club — image 4" style="position:relative;">
+            <img src="/images/img_69ccc0d38df55.jpg" alt="Photographie du club — image 4" data-index="3" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(4)" aria-label="Agrandir : Photographie du club — image 5" style="position:relative;">
+            <img src="/images/img_69ccbd36d3c58.jpg" alt="Photographie du club — image 5" data-index="4" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(5)" aria-label="Agrandir : Photographie du club — image 6" style="position:relative;">
+            <img src="/images/img_69ccbc70f11fa.jpg" alt="Photographie du club — image 6" data-index="5" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(6)" aria-label="Agrandir : Photographie du club — image 7" style="position:relative;">
+            <img src="/images/img_69ccbc683a72d.jpg" alt="Photographie du club — image 7" data-index="6" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(7)" aria-label="Agrandir : Photographie du club — image 8" style="position:relative;">
+            <img src="/images/img_69cccae4eb166.jpg" alt="Photographie du club — image 8" data-index="7" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(8)" aria-label="Agrandir : Photographie du club — image 9" style="position:relative;">
+            <img src="/images/img_69cccb0f97640.jpg" alt="Photographie du club — image 9" data-index="8" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(9)" aria-label="Agrandir : Photographie du club — image 10" style="position:relative;">
+            <img src="/images/img_69cccb2b61e28.jpg" alt="Photographie du club — image 10" data-index="9" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(10)" aria-label="Agrandir : Photographie du club — image 11" style="position:relative;">
+            <img src="/images/img_69cccb39442dc.jpg" alt="Photographie du club — image 11" data-index="10" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(11)" aria-label="Agrandir : Photographie du club — image 12" style="position:relative;">
+            <img src="/images/img_69cccb3e2365f.jpg" alt="Photographie du club — image 12" data-index="11" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(12)" aria-label="Agrandir : Photographie du club — image 13" style="position:relative;">
+            <img src="/images/img_69cccb4539d57.jpg" alt="Photographie du club — image 13" data-index="12" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(13)" aria-label="Agrandir : Photographie du club — image 14" style="position:relative;">
+            <img src="/images/img_69cccb4c7fd0b.jpg" alt="Photographie du club — image 14" data-index="13" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(14)" aria-label="Agrandir : Photographie du club — image 15" style="position:relative;">
+            <img src="/images/img_69cccb5633da3.jpg" alt="Photographie du club — image 15" data-index="14" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(15)" aria-label="Agrandir : Photographie du club — image 16" style="position:relative;">
+            <img src="/images/img_69cccb68c2ef5.jpg" alt="Photographie du club — image 16" data-index="15" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(16)" aria-label="Agrandir : Photographie du club — image 17" style="position:relative;">
+            <img src="/images/img_69cccb6e710e1.jpg" alt="Photographie du club — image 17" data-index="16" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(17)" aria-label="Agrandir : Photographie du club — image 18" style="position:relative;">
+            <img src="/images/img_69cccb731e1d0.jpg" alt="Photographie du club — image 18" data-index="17" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(18)" aria-label="Agrandir : Photographie du club — image 19" style="position:relative;">
+            <img src="/images/img_69cccba5ef436.jpg" alt="Photographie du club — image 19" data-index="18" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(19)" aria-label="Agrandir : Photographie du club — image 20" style="position:relative;">
+            <img src="/images/img_69cccba271855.jpg" alt="Photographie du club — image 20" data-index="19" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(20)" aria-label="Agrandir : Photographie du club — image 21" style="position:relative;">
+            <img src="/images/img_69cccb87364f8.jpg" alt="Photographie du club — image 21" data-index="20" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(21)" aria-label="Agrandir : Photographie du club — image 22" style="position:relative;">
+            <img src="/images/img_69cccb81c2fd8.jpg" alt="Photographie du club — image 22" data-index="21" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(22)" aria-label="Agrandir : Photographie du club — image 23" style="position:relative;">
+            <img src="/images/img_69cccb7d98bc8.jpg" alt="Photographie du club — image 23" data-index="22" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(23)" aria-label="Agrandir : Photographie du club — image 24" style="position:relative;">
+            <img src="/images/img_69cccb76817af.jpg" alt="Photographie du club — image 24" data-index="23" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(24)" aria-label="Agrandir : Photographie du club — image 25" style="position:relative;">
+            <img src="/images/img_69cccbb1b6575.jpg" alt="Photographie du club — image 25" data-index="24" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(25)" aria-label="Agrandir : Photographie du club — image 26" style="position:relative;">
+            <img src="/images/img_69cd499ab57af.jpg" alt="Photographie du club — image 26" data-index="25" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(26)" aria-label="Agrandir : Photographie du club — image 27" style="position:relative;">
+            <img src="/images/img_69cd538864850.jpg" alt="Photographie du club — image 27" data-index="26" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(27)" aria-label="Agrandir : Photographie du club — image 28" style="position:relative;">
+            <img src="/images/img_69cd7d741af45.jpg" alt="Photographie du club — image 28" data-index="27" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(28)" aria-label="Agrandir : Photographie du club — image 29" style="position:relative;">
+            <img src="/images/img_69ccb8e438610.jpg" alt="Photographie du club — image 29" data-index="28" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(29)" aria-label="Agrandir : Photographie du club — image 30" style="position:relative;">
+            <img src="/images/img_69cd584e82fb3.jpg" alt="Photographie du club — image 30" data-index="29" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(30)" aria-label="Agrandir : Photographie du club — image 31" style="position:relative;">
+            <img src="/images/img_69ccb8f6cd896.jpg" alt="Photographie du club — image 31" data-index="30" loading="lazy" decoding="async">
+                    </button>
+                        <button type="button" class="gallery-item" onclick="openLightbox(31)" aria-label="Agrandir : Photographie du club — image 32" style="position:relative;">
+            <img src="/images/img_69cccab6ddf89.jpg" alt="Photographie du club — image 32" data-index="31" loading="lazy" decoding="async">
+                    </button>
+                    </div>
+
     <div class="lightbox" id="lightbox" onclick="if(event.target === this) closeLightbox()">
         <div class="lightbox-content">
-            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-            <button class="lightbox-nav prev" onclick="prevImage(event)">&#10094;</button>
-            <img id="lightbox-img" src="" alt="">
-            <button class="lightbox-nav next" onclick="nextImage(event)">&#10095;</button>
+            <button type="button" class="lightbox-close" onclick="closeLightbox()" aria-label="Fermer l’image agrandie">&times;</button>
+            <button type="button" class="lightbox-nav prev" onclick="prevImage(event)" aria-label="Image précédente">&#10094;</button>
+            <img id="lightbox-img" alt="Photographie du club affichée en grand">
+            <button type="button" class="lightbox-nav next" onclick="nextImage(event)" aria-label="Image suivante">&#10095;</button>
             <div class="lightbox-counter" id="lightbox-counter"></div>
             <div id="lightbox-caption" style="text-align:center;color:rgba(255,255,255,0.8);font-size:14px;padding:6px 24px;min-height:20px;max-width:600px;margin:0 auto;"></div>
         </div>
     </div>
-        
+    
 
 
 
@@ -390,16 +460,78 @@ body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(-
 </footer>
 
 <script>
+const csrfToken = "";
+
+(function initRecruitmentCampaign() {
+    const section = document.getElementById('rejoindre-le-club');
+    const prompt = document.getElementById('joinPrompt');
+    if (!section || !prompt) return;
+
+    const campaignEnd = new Date((section.dataset.campaignEnd || '2026-09-30') + 'T23:59:59');
+    if (Date.now() > campaignEnd.getTime()) {
+        section.hidden = true;
+        prompt.hidden = true;
+        return;
+    }
+
+    const storageKey = 'pcb-recruitment-dismissed-v1';
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const previewPrompt = new URLSearchParams(window.location.search).get('campaign') === 'preview';
+    let dismissedAt = 0;
+    try { dismissedAt = Number(localStorage.getItem(storageKey) || 0); } catch (error) {}
+    if (!previewPrompt && dismissedAt && Date.now() - dismissedAt < sevenDays) return;
+
+    let hasOpened = false;
+    let timerId = 0;
+    const showPrompt = () => {
+        if (hasOpened) return;
+        hasOpened = true;
+        window.removeEventListener('scroll', onCampaignScroll);
+        window.clearTimeout(timerId);
+        prompt.hidden = false;
+        window.requestAnimationFrame(() => prompt.classList.add('is-visible'));
+    };
+    const onCampaignScroll = () => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        if (scrollable > 0 && window.scrollY / scrollable >= 0.5) showPrompt();
+    };
+    timerId = window.setTimeout(showPrompt, previewPrompt ? 250 : 12000);
+    window.addEventListener('scroll', onCampaignScroll, {passive: true});
+
+    const dismissPrompt = () => {
+        prompt.classList.remove('is-visible');
+        window.setTimeout(() => { prompt.hidden = true; }, 350);
+        try { localStorage.setItem(storageKey, String(Date.now())); } catch (error) {}
+    };
+    prompt.querySelector('.join-prompt-close')?.addEventListener('click', dismissPrompt);
+    prompt.querySelector('a')?.addEventListener('click', () => {
+        try { localStorage.setItem(storageKey, String(Date.now())); } catch (error) {}
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !prompt.hidden) dismissPrompt();
+    });
+})();
+
+const recruitmentMessageField = document.getElementById('contact-message');
+if (recruitmentMessageField && new URLSearchParams(window.location.search).get('motif') === 'inscription-septembre' && !recruitmentMessageField.value) {
+    recruitmentMessageField.value = "Bonjour,\n\nJe souhaite en savoir plus pour rejoindre le Photo Club Briançonnais à la rentrée de septembre.\n\nMerci de me préciser les prochaines dates de rencontre.";
+}
+function secureFetch(url, options = {}) {
+    const headers = new Headers(options.headers || {});
+    headers.set('X-CSRF-Token', csrfToken);
+    return fetch(url, {...options, headers});
+}
+
 // Lightbox Gallery
 let currentImageIndex = 0;
 let galleryImages = [];
 let galleryData = [];
 
-galleryData = [{"path":"images\/img_69ccb901e42bf.jpg","alt":""},{"path":"images\/img_69ccbc5d34f0c.jpg","alt":""},{"path":"images\/img_69ccc9f260e9e.jpg","alt":""},{"path":"images\/img_69ccc0d38df55.jpg","alt":""},{"path":"images\/img_69ccbd36d3c58.jpg","alt":""},{"path":"images\/img_69ccbc70f11fa.jpg","alt":""},{"path":"images\/img_69ccbc683a72d.jpg","alt":""},{"path":"images\/img_69cccae4eb166.jpg","alt":""},{"path":"images\/img_69cccb0f97640.jpg","alt":""},{"path":"images\/img_69cccb2b61e28.jpg","alt":""},{"path":"images\/img_69cccb39442dc.jpg","alt":""},{"path":"images\/img_69cccb3e2365f.jpg","alt":""},{"path":"images\/img_69cccb4539d57.jpg","alt":""},{"path":"images\/img_69cccb4c7fd0b.jpg","alt":""},{"path":"images\/img_69cccb5633da3.jpg","alt":""},{"path":"images\/img_69cccb68c2ef5.jpg","alt":""},{"path":"images\/img_69cccb6e710e1.jpg","alt":""},{"path":"images\/img_69cccb731e1d0.jpg","alt":""},{"path":"images\/img_69cccba5ef436.jpg","alt":""},{"path":"images\/img_69cccba271855.jpg","alt":""},{"path":"images\/img_69cccb87364f8.jpg","alt":""},{"path":"images\/img_69cccb81c2fd8.jpg","alt":""},{"path":"images\/img_69cccb7d98bc8.jpg","alt":""},{"path":"images\/img_69cccb76817af.jpg","alt":""},{"path":"images\/img_69cccbb1b6575.jpg","alt":""},{"path":"images\/img_69cd499ab57af.jpg","alt":""},{"path":"images\/img_69cd538864850.jpg","alt":""},{"path":"images\/img_69cd7d741af45.jpg","alt":""},{"path":"images\/img_69ccb8e438610.jpg","alt":""},{"path":"images\/img_69cd584e82fb3.jpg","alt":""},{"path":"images\/img_69ccb8f6cd896.jpg","alt":""},{"path":"images\/img_69cccab6ddf89.jpg","alt":""}];
-galleryImages = galleryData.map(x => window.location.origin + '/' + x.path);
+galleryData = [{"path":"images\/img_69ccb901e42bf.jpg","url":"\/images\/img_69ccb901e42bf.jpg","alt":""},{"path":"images\/img_69ccbc5d34f0c.jpg","url":"\/images\/img_69ccbc5d34f0c.jpg","alt":""},{"path":"images\/img_69ccc9f260e9e.jpg","url":"\/images\/img_69ccc9f260e9e.jpg","alt":""},{"path":"images\/img_69ccc0d38df55.jpg","url":"\/images\/img_69ccc0d38df55.jpg","alt":""},{"path":"images\/img_69ccbd36d3c58.jpg","url":"\/images\/img_69ccbd36d3c58.jpg","alt":""},{"path":"images\/img_69ccbc70f11fa.jpg","url":"\/images\/img_69ccbc70f11fa.jpg","alt":""},{"path":"images\/img_69ccbc683a72d.jpg","url":"\/images\/img_69ccbc683a72d.jpg","alt":""},{"path":"images\/img_69cccae4eb166.jpg","url":"\/images\/img_69cccae4eb166.jpg","alt":""},{"path":"images\/img_69cccb0f97640.jpg","url":"\/images\/img_69cccb0f97640.jpg","alt":""},{"path":"images\/img_69cccb2b61e28.jpg","url":"\/images\/img_69cccb2b61e28.jpg","alt":""},{"path":"images\/img_69cccb39442dc.jpg","url":"\/images\/img_69cccb39442dc.jpg","alt":""},{"path":"images\/img_69cccb3e2365f.jpg","url":"\/images\/img_69cccb3e2365f.jpg","alt":""},{"path":"images\/img_69cccb4539d57.jpg","url":"\/images\/img_69cccb4539d57.jpg","alt":""},{"path":"images\/img_69cccb4c7fd0b.jpg","url":"\/images\/img_69cccb4c7fd0b.jpg","alt":""},{"path":"images\/img_69cccb5633da3.jpg","url":"\/images\/img_69cccb5633da3.jpg","alt":""},{"path":"images\/img_69cccb68c2ef5.jpg","url":"\/images\/img_69cccb68c2ef5.jpg","alt":""},{"path":"images\/img_69cccb6e710e1.jpg","url":"\/images\/img_69cccb6e710e1.jpg","alt":""},{"path":"images\/img_69cccb731e1d0.jpg","url":"\/images\/img_69cccb731e1d0.jpg","alt":""},{"path":"images\/img_69cccba5ef436.jpg","url":"\/images\/img_69cccba5ef436.jpg","alt":""},{"path":"images\/img_69cccba271855.jpg","url":"\/images\/img_69cccba271855.jpg","alt":""},{"path":"images\/img_69cccb87364f8.jpg","url":"\/images\/img_69cccb87364f8.jpg","alt":""},{"path":"images\/img_69cccb81c2fd8.jpg","url":"\/images\/img_69cccb81c2fd8.jpg","alt":""},{"path":"images\/img_69cccb7d98bc8.jpg","url":"\/images\/img_69cccb7d98bc8.jpg","alt":""},{"path":"images\/img_69cccb76817af.jpg","url":"\/images\/img_69cccb76817af.jpg","alt":""},{"path":"images\/img_69cccbb1b6575.jpg","url":"\/images\/img_69cccbb1b6575.jpg","alt":""},{"path":"images\/img_69cd499ab57af.jpg","url":"\/images\/img_69cd499ab57af.jpg","alt":""},{"path":"images\/img_69cd538864850.jpg","url":"\/images\/img_69cd538864850.jpg","alt":""},{"path":"images\/img_69cd7d741af45.jpg","url":"\/images\/img_69cd7d741af45.jpg","alt":""},{"path":"images\/img_69ccb8e438610.jpg","url":"\/images\/img_69ccb8e438610.jpg","alt":""},{"path":"images\/img_69cd584e82fb3.jpg","url":"\/images\/img_69cd584e82fb3.jpg","alt":""},{"path":"images\/img_69ccb8f6cd896.jpg","url":"\/images\/img_69ccb8f6cd896.jpg","alt":""},{"path":"images\/img_69cccab6ddf89.jpg","url":"\/images\/img_69cccab6ddf89.jpg","alt":""}];
+galleryImages = galleryData.map(x => x.url);
 function toggleGalleryImage(path, el) {
     const isInGallery = el.style.borderColor === 'var(--gold)' || el.style.borderColor === 'rgb(212, 175, 55)';
-    
+
     if (isInGallery) {
         removeFromGallery(path);
     } else {
@@ -408,7 +540,7 @@ function toggleGalleryImage(path, el) {
 }
 
 function saveGalleryAlt(path, alt) {
-    fetch('?page=galerie', {
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=save_gallery_alt&path=' + encodeURIComponent(path) + '&alt=' + encodeURIComponent(alt)
@@ -416,7 +548,7 @@ function saveGalleryAlt(path, alt) {
 }
 
 function addToGallery(path) {
-    fetch('?page=galerie', {
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=add_to_gallery&path=' + encodeURIComponent(path)
@@ -431,7 +563,7 @@ function addToGallery(path) {
 
 function removeFromGallery(path) {
     if (!confirm('Retirer cette image de la galerie ?')) return;
-    fetch('?page=galerie', {
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=remove_from_gallery&path=' + encodeURIComponent(path)
@@ -448,7 +580,7 @@ function openLightbox(index) {
     currentImageIndex = index;
     const img = document.getElementById('lightbox-img');
     img.src = galleryImages[currentImageIndex];
-    img.alt = (galleryData[currentImageIndex] || {}).alt || '';
+    img.alt = (galleryData[currentImageIndex] || {}).alt || 'Photographie du club affichée en grand';
     const cap = document.getElementById('lightbox-caption');
     if (cap) cap.textContent = (galleryData[currentImageIndex] || {}).alt || '';
     document.getElementById('lightbox-counter').textContent = (currentImageIndex + 1) + ' / ' + galleryImages.length;
@@ -465,7 +597,7 @@ function prevImage(e) {
     e.stopPropagation();
     currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
     document.getElementById('lightbox-img').src = galleryImages[currentImageIndex];
-    document.getElementById('lightbox-img').alt = (galleryData[currentImageIndex] || {}).alt || '';
+    document.getElementById('lightbox-img').alt = (galleryData[currentImageIndex] || {}).alt || 'Photographie du club affichée en grand';
     const capP = document.getElementById('lightbox-caption');
     if (capP) capP.textContent = (galleryData[currentImageIndex] || {}).alt || '';
     document.getElementById('lightbox-counter').textContent = (currentImageIndex + 1) + ' / ' + galleryImages.length;
@@ -475,7 +607,7 @@ function nextImage(e) {
     e.stopPropagation();
     currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
     document.getElementById('lightbox-img').src = galleryImages[currentImageIndex];
-    document.getElementById('lightbox-img').alt = (galleryData[currentImageIndex] || {}).alt || '';
+    document.getElementById('lightbox-img').alt = (galleryData[currentImageIndex] || {}).alt || 'Photographie du club affichée en grand';
     const capN = document.getElementById('lightbox-caption');
     if (capN) capN.textContent = (galleryData[currentImageIndex] || {}).alt || '';
     document.getElementById('lightbox-counter').textContent = (currentImageIndex + 1) + ' / ' + galleryImages.length;
@@ -492,14 +624,21 @@ document.addEventListener('keydown', function(e) {
 
 
 <script>
-let currentHeroImage = 'images/img_69ccb901e42bf.jpg';
+let currentHeroImage = "images\/img_69ccb901e42bf.jpg";
 let currentHeight = 60;
 let currentPosition = 0;
 let currentOpacity = 0.4;
+const currentPage = "galerie";
 let chatConversation = '';
 let chatMessageCount = 0;
 
-function toggleMobileMenu() { document.getElementById('navMenu').classList.toggle('open'); }
+function toggleMobileMenu() {
+    const menu = document.getElementById('navMenu');
+    const button = document.querySelector('.mobile-menu-btn');
+    const isOpen = menu.classList.toggle('open');
+    button?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    button?.setAttribute('aria-label', isOpen ? 'Fermer le menu' : 'Ouvrir le menu');
+}
 function toggleEditor() { document.getElementById('editorPanel').classList.toggle('active'); }
 function switchTab(tab) {
     document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
@@ -508,8 +647,15 @@ function switchTab(tab) {
     document.getElementById('tab-' + tab).classList.add('active');
 }
 
-function updateSiteName(val) { document.getElementById('previewTitle').textContent = val; document.querySelector('.hero h1').textContent = val; }
-function updateMeeting(val) { document.getElementById('previewMeeting').textContent = val; document.querySelector('.hero-info').innerHTML = '<span>&#128205;</span> ' + val; }
+function updateSiteName(val) {
+    document.getElementById('previewTitle').textContent = val;
+    if (currentPage === 'accueil') document.querySelector('.hero h1').textContent = val;
+}
+function updateMeeting(val) {
+    document.getElementById('previewMeeting').textContent = val;
+    const meeting = document.querySelector('.hero-info');
+    if (meeting) meeting.textContent = '📅 ' + val;
+}
 
 function updateHero(type, val) {
     if (type === 'height') {
@@ -535,10 +681,14 @@ function updateHero(type, val) {
 function updateHeroPreview() {
     const hero = document.getElementById('heroSection');
     if (currentHeroImage) {
-        hero.style.backgroundImage = 'url(' + currentHeroImage + ')';
+        hero.style.backgroundImage = 'url(' + imageDisplayUrl(currentHeroImage) + ')';
         hero.style.backgroundSize = 'cover';
         hero.style.backgroundPosition = 'center ' + currentPosition + '%';
     }
+}
+
+function imageDisplayUrl(path) {
+    return path && path.startsWith('images/') ? '/' + path : path;
 }
 
 function selectHeroImage(path) {
@@ -578,8 +728,8 @@ function publishSite() {
     btn.disabled = true;
     btn.innerHTML = '&#9203; Publication en cours...';
     if (status) status.textContent = '';
-    
-    fetch('?page=' + (new URLSearchParams(window.location.search).get('page') || 'accueil'), {
+
+    secureFetch('?page=' + (new URLSearchParams(window.location.search).get('page') || 'accueil'), {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=deploy'
@@ -592,7 +742,7 @@ function publishSite() {
             // Poll deploy status
             let polls = 0;
             const poll = setInterval(() => {
-                fetch('?page=accueil', {
+                secureFetch('?page=accueil', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: 'action=deploy_status'
@@ -602,9 +752,9 @@ function publishSite() {
                         clearInterval(poll);
                         btn.disabled = false;
                         btn.innerHTML = '&#127760; Publier le site';
-                        if (s.log && s.log.includes('Deploy complete')) {
+                        if (s.log && s.log.includes('Publication terminée')) {
                             if (status) status.innerHTML = '&#9989; <strong style="color:#4caf90">Publie avec succes !</strong>';
-                        } else if (s.log && s.log.includes('No changes')) {
+                        } else if (s.log && s.log.includes('Aucun changement')) {
                             if (status) status.innerHTML = '&#8505; Aucun changement a publier';
                         }
                     } else {
@@ -635,7 +785,7 @@ function showToast(msg, ok) {
     t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
 }
 function saveConfigData(data) {
-    fetch('?page=galerie', {
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=save_config&data=' + encodeURIComponent(JSON.stringify(data))
@@ -679,9 +829,9 @@ function moveBlock(i, d) { const ni = i+d; if (ni < 0 || ni >= blocks.length) re
 
 function editBlock(i) {
     const b = blocks[i];
-    const images = [{"path":"images\/_DSC2224_redim_69ce644d557ba.png","name":"_DSC2224_redim_69ce644d557ba"},{"path":"images\/img_69ccb8e438610.jpg","name":"img_69ccb8e438610"},{"path":"images\/img_69ccb8f6cd896.jpg","name":"img_69ccb8f6cd896"},{"path":"images\/img_69ccb901e42bf.jpg","name":"img_69ccb901e42bf"},{"path":"images\/img_69ccb916827c1.jpg","name":"img_69ccb916827c1"},{"path":"images\/img_69ccbc5d34f0c.jpg","name":"img_69ccbc5d34f0c"},{"path":"images\/img_69ccbc683a72d.jpg","name":"img_69ccbc683a72d"},{"path":"images\/img_69ccbc70f11fa.jpg","name":"img_69ccbc70f11fa"},{"path":"images\/img_69ccbd36d3c58.jpg","name":"img_69ccbd36d3c58"},{"path":"images\/img_69ccc0d38df55.jpg","name":"img_69ccc0d38df55"},{"path":"images\/img_69ccc9f260e9e.jpg","name":"img_69ccc9f260e9e"},{"path":"images\/img_69cccab6ddf89.jpg","name":"img_69cccab6ddf89"},{"path":"images\/img_69cccae4eb166.jpg","name":"img_69cccae4eb166"},{"path":"images\/img_69cccb0f97640.jpg","name":"img_69cccb0f97640"},{"path":"images\/img_69cccb2b61e28.jpg","name":"img_69cccb2b61e28"},{"path":"images\/img_69cccb39442dc.jpg","name":"img_69cccb39442dc"},{"path":"images\/img_69cccb3e2365f.jpg","name":"img_69cccb3e2365f"},{"path":"images\/img_69cccb4539d57.jpg","name":"img_69cccb4539d57"},{"path":"images\/img_69cccb4c7fd0b.jpg","name":"img_69cccb4c7fd0b"},{"path":"images\/img_69cccb5633da3.jpg","name":"img_69cccb5633da3"},{"path":"images\/img_69cccb605aece.jpg","name":"img_69cccb605aece"},{"path":"images\/img_69cccb68c2ef5.jpg","name":"img_69cccb68c2ef5"},{"path":"images\/img_69cccb6e710e1.jpg","name":"img_69cccb6e710e1"},{"path":"images\/img_69cccb731e1d0.jpg","name":"img_69cccb731e1d0"},{"path":"images\/img_69cccb76817af.jpg","name":"img_69cccb76817af"},{"path":"images\/img_69cccb7d98bc8.jpg","name":"img_69cccb7d98bc8"},{"path":"images\/img_69cccb81c2fd8.jpg","name":"img_69cccb81c2fd8"},{"path":"images\/img_69cccb87364f8.jpg","name":"img_69cccb87364f8"},{"path":"images\/img_69cccba271855.jpg","name":"img_69cccba271855"},{"path":"images\/img_69cccba5ef436.jpg","name":"img_69cccba5ef436"},{"path":"images\/img_69cccbad03d54.jpg","name":"img_69cccbad03d54"},{"path":"images\/img_69cccbb1b6575.jpg","name":"img_69cccbb1b6575"},{"path":"images\/img_69cccbfc82ceb.jpg","name":"img_69cccbfc82ceb"},{"path":"images\/img_69ccccc543064.jpg","name":"img_69ccccc543064"},{"path":"images\/img_69cccd5238a62.jpg","name":"img_69cccd5238a62"},{"path":"images\/img_69cd499ab57af.jpg","name":"img_69cd499ab57af"},{"path":"images\/img_69cd501217125.jpg","name":"img_69cd501217125"},{"path":"images\/img_69cd538864850.jpg","name":"img_69cd538864850"},{"path":"images\/img_69cd547422474.jpg","name":"img_69cd547422474"},{"path":"images\/img_69cd54ee11d9e.jpg","name":"img_69cd54ee11d9e"},{"path":"images\/img_69cd54f4a6094.jpg","name":"img_69cd54f4a6094"},{"path":"images\/img_69cd55088e060.jpg","name":"img_69cd55088e060"},{"path":"images\/img_69cd56a22683e.jpg","name":"img_69cd56a22683e"},{"path":"images\/img_69cd56c498d27.jpg","name":"img_69cd56c498d27"},{"path":"images\/img_69cd56dc7ac4a.jpg","name":"img_69cd56dc7ac4a"},{"path":"images\/img_69cd56e71d824.jpg","name":"img_69cd56e71d824"},{"path":"images\/img_69cd56eca0183.jpg","name":"img_69cd56eca0183"},{"path":"images\/img_69cd584e82fb3.jpg","name":"img_69cd584e82fb3"},{"path":"images\/img_69cd6907ab9d6.jpg","name":"img_69cd6907ab9d6"},{"path":"images\/img_69cd6ac5d7c85.jpg","name":"img_69cd6ac5d7c85"},{"path":"images\/img_69cd7adb465a3.jpg","name":"img_69cd7adb465a3"},{"path":"images\/img_69cd7c09b62a9.jpg","name":"img_69cd7c09b62a9"},{"path":"images\/img_69cd7d741af45.jpg","name":"img_69cd7d741af45"},{"path":"images\/scan_9a_69f5eb477c406.jpg","name":"scan_9a_69f5eb477c406"}];
+    const images = [{"path":"images\/_DSC2224_redim_69ce644d557ba.png","url":"\/images\/_DSC2224_redim_69ce644d557ba.png","name":"_DSC2224_redim_69ce644d557ba"},{"path":"images\/img_69ccb8e438610.jpg","url":"\/images\/img_69ccb8e438610.jpg","name":"img_69ccb8e438610"},{"path":"images\/img_69ccb8f6cd896.jpg","url":"\/images\/img_69ccb8f6cd896.jpg","name":"img_69ccb8f6cd896"},{"path":"images\/img_69ccb901e42bf.jpg","url":"\/images\/img_69ccb901e42bf.jpg","name":"img_69ccb901e42bf"},{"path":"images\/img_69ccb916827c1.jpg","url":"\/images\/img_69ccb916827c1.jpg","name":"img_69ccb916827c1"},{"path":"images\/img_69ccbc5d34f0c.jpg","url":"\/images\/img_69ccbc5d34f0c.jpg","name":"img_69ccbc5d34f0c"},{"path":"images\/img_69ccbc683a72d.jpg","url":"\/images\/img_69ccbc683a72d.jpg","name":"img_69ccbc683a72d"},{"path":"images\/img_69ccbc70f11fa.jpg","url":"\/images\/img_69ccbc70f11fa.jpg","name":"img_69ccbc70f11fa"},{"path":"images\/img_69ccbd36d3c58.jpg","url":"\/images\/img_69ccbd36d3c58.jpg","name":"img_69ccbd36d3c58"},{"path":"images\/img_69ccc0d38df55.jpg","url":"\/images\/img_69ccc0d38df55.jpg","name":"img_69ccc0d38df55"},{"path":"images\/img_69ccc9f260e9e.jpg","url":"\/images\/img_69ccc9f260e9e.jpg","name":"img_69ccc9f260e9e"},{"path":"images\/img_69cccab6ddf89.jpg","url":"\/images\/img_69cccab6ddf89.jpg","name":"img_69cccab6ddf89"},{"path":"images\/img_69cccae4eb166.jpg","url":"\/images\/img_69cccae4eb166.jpg","name":"img_69cccae4eb166"},{"path":"images\/img_69cccb0f97640.jpg","url":"\/images\/img_69cccb0f97640.jpg","name":"img_69cccb0f97640"},{"path":"images\/img_69cccb2b61e28.jpg","url":"\/images\/img_69cccb2b61e28.jpg","name":"img_69cccb2b61e28"},{"path":"images\/img_69cccb39442dc.jpg","url":"\/images\/img_69cccb39442dc.jpg","name":"img_69cccb39442dc"},{"path":"images\/img_69cccb3e2365f.jpg","url":"\/images\/img_69cccb3e2365f.jpg","name":"img_69cccb3e2365f"},{"path":"images\/img_69cccb4539d57.jpg","url":"\/images\/img_69cccb4539d57.jpg","name":"img_69cccb4539d57"},{"path":"images\/img_69cccb4c7fd0b.jpg","url":"\/images\/img_69cccb4c7fd0b.jpg","name":"img_69cccb4c7fd0b"},{"path":"images\/img_69cccb5633da3.jpg","url":"\/images\/img_69cccb5633da3.jpg","name":"img_69cccb5633da3"},{"path":"images\/img_69cccb605aece.jpg","url":"\/images\/img_69cccb605aece.jpg","name":"img_69cccb605aece"},{"path":"images\/img_69cccb68c2ef5.jpg","url":"\/images\/img_69cccb68c2ef5.jpg","name":"img_69cccb68c2ef5"},{"path":"images\/img_69cccb6e710e1.jpg","url":"\/images\/img_69cccb6e710e1.jpg","name":"img_69cccb6e710e1"},{"path":"images\/img_69cccb731e1d0.jpg","url":"\/images\/img_69cccb731e1d0.jpg","name":"img_69cccb731e1d0"},{"path":"images\/img_69cccb76817af.jpg","url":"\/images\/img_69cccb76817af.jpg","name":"img_69cccb76817af"},{"path":"images\/img_69cccb7d98bc8.jpg","url":"\/images\/img_69cccb7d98bc8.jpg","name":"img_69cccb7d98bc8"},{"path":"images\/img_69cccb81c2fd8.jpg","url":"\/images\/img_69cccb81c2fd8.jpg","name":"img_69cccb81c2fd8"},{"path":"images\/img_69cccb87364f8.jpg","url":"\/images\/img_69cccb87364f8.jpg","name":"img_69cccb87364f8"},{"path":"images\/img_69cccba271855.jpg","url":"\/images\/img_69cccba271855.jpg","name":"img_69cccba271855"},{"path":"images\/img_69cccba5ef436.jpg","url":"\/images\/img_69cccba5ef436.jpg","name":"img_69cccba5ef436"},{"path":"images\/img_69cccbad03d54.jpg","url":"\/images\/img_69cccbad03d54.jpg","name":"img_69cccbad03d54"},{"path":"images\/img_69cccbb1b6575.jpg","url":"\/images\/img_69cccbb1b6575.jpg","name":"img_69cccbb1b6575"},{"path":"images\/img_69cccbfc82ceb.jpg","url":"\/images\/img_69cccbfc82ceb.jpg","name":"img_69cccbfc82ceb"},{"path":"images\/img_69ccccc543064.jpg","url":"\/images\/img_69ccccc543064.jpg","name":"img_69ccccc543064"},{"path":"images\/img_69cccd5238a62.jpg","url":"\/images\/img_69cccd5238a62.jpg","name":"img_69cccd5238a62"},{"path":"images\/img_69cd499ab57af.jpg","url":"\/images\/img_69cd499ab57af.jpg","name":"img_69cd499ab57af"},{"path":"images\/img_69cd501217125.jpg","url":"\/images\/img_69cd501217125.jpg","name":"img_69cd501217125"},{"path":"images\/img_69cd538864850.jpg","url":"\/images\/img_69cd538864850.jpg","name":"img_69cd538864850"},{"path":"images\/img_69cd547422474.jpg","url":"\/images\/img_69cd547422474.jpg","name":"img_69cd547422474"},{"path":"images\/img_69cd54ee11d9e.jpg","url":"\/images\/img_69cd54ee11d9e.jpg","name":"img_69cd54ee11d9e"},{"path":"images\/img_69cd54f4a6094.jpg","url":"\/images\/img_69cd54f4a6094.jpg","name":"img_69cd54f4a6094"},{"path":"images\/img_69cd55088e060.jpg","url":"\/images\/img_69cd55088e060.jpg","name":"img_69cd55088e060"},{"path":"images\/img_69cd56a22683e.jpg","url":"\/images\/img_69cd56a22683e.jpg","name":"img_69cd56a22683e"},{"path":"images\/img_69cd56c498d27.jpg","url":"\/images\/img_69cd56c498d27.jpg","name":"img_69cd56c498d27"},{"path":"images\/img_69cd56dc7ac4a.jpg","url":"\/images\/img_69cd56dc7ac4a.jpg","name":"img_69cd56dc7ac4a"},{"path":"images\/img_69cd56e71d824.jpg","url":"\/images\/img_69cd56e71d824.jpg","name":"img_69cd56e71d824"},{"path":"images\/img_69cd56eca0183.jpg","url":"\/images\/img_69cd56eca0183.jpg","name":"img_69cd56eca0183"},{"path":"images\/img_69cd584e82fb3.jpg","url":"\/images\/img_69cd584e82fb3.jpg","name":"img_69cd584e82fb3"},{"path":"images\/img_69cd6907ab9d6.jpg","url":"\/images\/img_69cd6907ab9d6.jpg","name":"img_69cd6907ab9d6"},{"path":"images\/img_69cd6ac5d7c85.jpg","url":"\/images\/img_69cd6ac5d7c85.jpg","name":"img_69cd6ac5d7c85"},{"path":"images\/img_69cd7adb465a3.jpg","url":"\/images\/img_69cd7adb465a3.jpg","name":"img_69cd7adb465a3"},{"path":"images\/img_69cd7c09b62a9.jpg","url":"\/images\/img_69cd7c09b62a9.jpg","name":"img_69cd7c09b62a9"},{"path":"images\/img_69cd7d741af45.jpg","url":"\/images\/img_69cd7d741af45.jpg","name":"img_69cd7d741af45"},{"path":"images\/scan_9a_69f5eb477c406.jpg","url":"\/images\/scan_9a_69f5eb477c406.jpg","name":"scan_9a_69f5eb477c406"}];
     let html = '';
-    
+
     if (b.type === 'text' || b.type === 'news') {
         // Title and comment fields (for all block types)
         let titleCommentHtml = `
@@ -700,14 +850,14 @@ function editBlock(i) {
         } else {
             images.forEach(img => {
                 const isSelected = b.image === img.path;
-                thumbnailsHtml += '<div onclick="setBlockImage(' + i + ',\'' + img.path + '\')" style="aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:3px solid ' + (isSelected ? 'var(--gold)' : 'transparent') + ';transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--gold)\'" onmouseout="this.style.borderColor=\'' + (isSelected ? 'var(--gold)' : 'transparent') + '\'"><img src="' + img.path + '" style="width:100%;height:100%;object-fit:cover;"></div>';
+                thumbnailsHtml += '<div onclick="setBlockImage(' + i + ',\'' + img.path + '\')" style="aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:3px solid ' + (isSelected ? 'var(--gold)' : 'transparent') + ';transition:all 0.2s;" onmouseover="this.style.borderColor=\'var(--gold)\'" onmouseout="this.style.borderColor=\'' + (isSelected ? 'var(--gold)' : 'transparent') + '\'"><img src="' + img.url + '" style="width:100%;height:100%;object-fit:cover;"></div>';
             });
         }
         thumbnailsHtml += '</div>';
-        
+
         const imgSizeLabels = {small: 'Petit (200px)', medium: 'Moyen (320px)', large: 'Grand (440px)', xlarge: 'Très grand (560px)', xxlarge: 'Immense (700px)'};
         const imgSizeOptions = Object.entries(imgSizeLabels).map(([s, label]) => `<option value="${s}" ${(b.image_size || 'medium') === s ? 'selected' : ''}>${label}</option>`).join('');
-        
+
         html = titleCommentHtml + `
             <div class="form-group">
                 <label>Choisir une image existante</label>
@@ -751,13 +901,13 @@ function editBlock(i) {
             </div>
         `;
     }
-    
+
     const m = document.createElement('div');
     m.id = 'editModal';
     m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px;overflow-y:auto;';
     m.innerHTML = '<div style="background:var(--dark-light);padding:32px;border-radius:16px;width:100%;max-width:700px;border:1px solid rgba(212,175,55,0.2);max-height:90vh;overflow-y:auto;"><h3 style="color:var(--gold);margin-bottom:20px;">Modifier le bloc</h3>' + html + '<div style="display:flex;gap:12px;margin-top:20px;"><button class="btn btn-gold" onclick="saveEdit(' + i + ')">OK</button><button class="btn btn-outline" onclick="closeEditModal()">Annuler</button></div></div>';
     document.body.appendChild(m);
-    
+
     // Close on Escape
     document.addEventListener('keydown', function escHandler(e) {
         if (e.key === 'Escape') {
@@ -777,7 +927,7 @@ function clearBlockImage() {
 
 function saveEdit(i) {
     const b = blocks[i];
-    b.content = document.getElementById('edit-content')?.innerHTML || b.content; 
+    b.content = document.getElementById('edit-content')?.innerHTML || b.content;
     b.image = document.getElementById('edit-image')?.value || '';
     b.image_pos = document.getElementById('edit-image_pos')?.value || 'top';
     b.image_size = document.getElementById('edit-image_size')?.value || 'medium';
@@ -787,7 +937,7 @@ function saveEdit(i) {
 }
 
 function saveBlocks() {
-    fetch('?page=galerie', {
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=save_blocks&page=galerie&data=' + encodeURIComponent(JSON.stringify(blocks))
@@ -814,14 +964,14 @@ function toggleGalleryImageClick(el, path) {
 function saveGallerySelection() {
     const items = document.querySelectorAll('#imagePicker .image-picker-item');
     const finalPaths = [];
-    
+
     items.forEach(item => {
         if (item.classList.contains('in-gallery')) {
             finalPaths.push(item.dataset.path);
         }
     });
-    
-    fetch('?page=galerie', {
+
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=save_gallery_batch&paths=' + encodeURIComponent(JSON.stringify(finalPaths))
@@ -840,7 +990,7 @@ document.getElementById('uploadForm')?.addEventListener('submit', function(e) {
     const fd = new FormData(this);
     fd.append('action', 'upload_image');
     document.getElementById('uploadResult').innerHTML = '<span style="color:var(--gold);">Upload...</span>';
-    fetch('?page=galerie', { method: 'POST', body: fd })
+    secureFetch('?page=galerie', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(res => {
         if (res.ok) { document.getElementById('uploadResult').innerHTML = '<span style="color:#1EA97C;">OK!</span>'; setTimeout(() => location.reload(), 1000); }
@@ -854,7 +1004,7 @@ document.getElementById('uploadFormGallery')?.addEventListener('submit', functio
     fd.append('action', 'upload_image');
     fd.append('add_to_gallery', document.getElementById('add-gallery-check').checked ? 'true' : 'false');
     document.getElementById('uploadGalleryResult').innerHTML = '<span style="color:var(--gold);">Upload...</span>';
-    fetch('?page=galerie', { method: 'POST', body: fd })
+    secureFetch('?page=galerie', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(res => {
         if (res.ok) { document.getElementById('uploadGalleryResult').innerHTML = '<span style="color:#1EA97C;">OK! Ajoute a la galerie!</span>'; setTimeout(() => location.reload(), 1000); }
@@ -867,8 +1017,8 @@ function correctText() {
     if (text.length < 10) { alert('Texte trop court'); return; }
     document.getElementById('aiLoading').classList.add('show');
     document.getElementById('aiResult').style.display = 'none';
-    
-    fetch('?page=galerie', {
+
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=ai_correct&text=' + encodeURIComponent(text)
@@ -895,18 +1045,18 @@ function sendChat() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg) return;
-    
+
     chatConversation += (chatConversation ? ' | ' : '') + 'User: ' + msg;
     chatMessageCount++;
-    
+
     const messagesDiv = document.getElementById('chatMessages');
     messagesDiv.innerHTML += '<div class="chat-message user">' + msg + '</div>';
     input.value = '';
-    
+
     document.getElementById('chatLoading').style.display = 'flex';
     document.getElementById('generateBlocksSection').style.display = 'none';
-    
-    fetch('?page=galerie', {
+
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=ai_chat&conversation=' + encodeURIComponent(chatConversation)
@@ -918,7 +1068,7 @@ function sendChat() {
             chatConversation += ' | AI: ' + res.response;
             messagesDiv.innerHTML += '<div class="chat-message ai">' + res.response + '</div>';
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            
+
             if (chatMessageCount >= 2) {
                 document.getElementById('generateBlocksSection').style.display = 'block';
             }
@@ -935,11 +1085,11 @@ function useSuggestion(text) {
 
 function generateBlocks() {
     if (!confirm('Generer des blocs de contenu bas�s sur la conversation ?')) return;
-    
+
     document.getElementById('chatLoading').style.display = 'flex';
     document.getElementById('generatedBlocksPreview').style.display = 'none';
-    
-    fetch('?page=galerie', {
+
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=ai_generate_blocks&conversation=' + encodeURIComponent(chatConversation)
@@ -998,12 +1148,12 @@ function uploadImageForBlock(blockIndex) {
         alert('Selectionnez d\'abord une image');
         return;
     }
-    
+
     const fd = new FormData();
     fd.append('action', 'upload_image');
     fd.append('image', file);
-    
-    fetch('?page=galerie', { method: 'POST', body: fd })
+
+    secureFetch('?page=galerie', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(res => {
         if (res.ok) {
@@ -1129,20 +1279,25 @@ function sendContact(e) {
     const name = document.getElementById('contact-name').value;
     const email = document.getElementById('contact-email').value;
     const message = document.getElementById('contact-message').value;
+    const website = document.getElementById('contact-website').value;
     const result = document.getElementById('contactResult');
-    
+
     result.style.display = 'block';
     result.style.background = 'rgba(212, 175, 55, 0.1)';
     result.style.color = 'var(--gold)';
     result.textContent = 'Envoi en cours...';
-    
+
     const isStatic = window.location.pathname.endsWith('.html') || window.location.hostname.includes('github.io');
+    const clubContactEmail = "contact@photoclub.fr";
+    const contactSubject = new URLSearchParams(window.location.search).get('motif') === 'inscription-septembre'
+        ? 'Inscription septembre — Photo Club Briançonnais'
+        : 'Contact web Photo Club Briançonnais';
 
     if (isStatic) {
-        fetch('https://formsubmit.co/ajax/g.lhotte279@gmail.com', {
+        fetch('https://formsubmit.co/ajax/' + encodeURIComponent(clubContactEmail), {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-            body: JSON.stringify({name: name, email: email, message: message, _subject: 'Contact web Photo Club Brianconnais'})
+            body: JSON.stringify({name: name, email: email, message: message, _honey: website, _subject: contactSubject})
         })
         .then(r => r.json())
         .then(res => {
@@ -1168,10 +1323,10 @@ function sendContact(e) {
             result.textContent = 'Erreur de connexion';
         });
     } else {
-        fetch('?page=contact', {
+        secureFetch('?page=contact', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'action=send_contact&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email) + '&message=' + encodeURIComponent(message)
+            body: 'action=send_contact&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email) + '&message=' + encodeURIComponent(message) + '&website=' + encodeURIComponent(website)
         })
         .then(r => r.json())
         .then(res => {
@@ -1203,22 +1358,22 @@ document.querySelectorAll('.block-wrapper[draggable=true]').forEach(wrapper => {
         this.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
     });
-    
+
     wrapper.addEventListener('dragend', function() {
         this.classList.remove('dragging');
         document.querySelectorAll('.block-wrapper').forEach(w => w.classList.remove('drag-over'));
         draggedIndex = null;
     });
-    
+
     wrapper.addEventListener('dragover', function(e) {
         e.preventDefault();
         this.classList.add('drag-over');
     });
-    
+
     wrapper.addEventListener('dragleave', function() {
         this.classList.remove('drag-over');
     });
-    
+
     wrapper.addEventListener('drop', function(e) {
         e.preventDefault();
         const dropIndex = parseInt(this.dataset.index);
@@ -1362,7 +1517,7 @@ function clearResize() {
 
 function deleteGalleryImage(path) {
     if (!confirm('Supprimer cette image de la galerie ?')) return;
-    fetch('?page=galerie', {
+    secureFetch('?page=galerie', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=remove_from_gallery&path=' + encodeURIComponent(path)
