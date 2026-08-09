@@ -1,0 +1,13 @@
+RAW decoding is provided by LibRaw-Wasm 1.6.0:
+https://github.com/ybouane/LibRaw-Wasm
+
+The package metadata declares the JavaScript/WebAssembly wrapper under the ISC
+license. The bundled decoder incorporates LibRaw, which is available under the
+GNU Lesser General Public License 2.1 or the Common Development and Distribution
+License 1.0. Copies of both LibRaw licenses are included in this directory.
+
+LibRaw source code:
+https://github.com/LibRaw/LibRaw
+
+The files index.js, worker.js and libraw.wasm are unmodified release artifacts
+from LibRaw-Wasm v1.6.0.
