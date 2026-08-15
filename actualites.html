@@ -900,8 +900,28 @@ function switchTab(tab) {
 }
 
 function updateSiteName(val) {
+    const headerName = document.querySelector('.header-logo > div');
+    const footerName = document.querySelector('.footer-logo');
+    if (headerName) headerName.textContent = val;
+    if (footerName) footerName.textContent = val;
+}
+function updateHeroTitle(val) {
     document.getElementById('previewTitle').textContent = val;
-    if (currentPage === 'accueil') document.querySelector('.hero h1').textContent = val;
+    if (currentPage === 'accueil') {
+        const title = document.querySelector('.hero h1');
+        if (title) title.textContent = val;
+    }
+}
+function updateOfficialBadge(val) {
+    const previewBadge = document.getElementById('previewOfficialBadge');
+    const pageBadge = currentPage === 'accueil' ? document.querySelector('#heroSection .hero-official') : null;
+    const text = val.trim();
+    previewBadge.textContent = text;
+    previewBadge.style.display = text ? 'inline-flex' : 'none';
+    if (pageBadge) {
+        pageBadge.textContent = text;
+        pageBadge.style.display = text ? 'inline-flex' : 'none';
+    }
 }
 function updateMeeting(val) {
     document.getElementById('previewMeeting').textContent = val;
@@ -952,6 +972,8 @@ function selectHeroImage(path) {
 
 function saveHeroSettings() {
     saveConfigData({
+        hero_title: document.getElementById('hero-title').value,
+        official_badge: document.getElementById('official-badge').value,
         hero_image: currentHeroImage,
         hero_height: currentHeight,
         hero_position: currentPosition,
