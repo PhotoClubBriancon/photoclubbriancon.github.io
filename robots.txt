@@ -6,3 +6,4 @@ User-agent: OAI-SearchBot
 Allow: /
 
 Sitemap: https://photoclubbriancon.github.io/sitemap.xml
+Sitemap: https://photoclubbriancon.github.io/sitemap.txt

@@ -1,6 +1,6 @@
 # Photo Club Briançonnais
 
-> Site officiel du Photo Club Briançonnais, association de photographes à Briançon dans les Hautes-Alpes.
+> Site officiel du Photo Club Briançonnais, le club photo de Briançon pour les photographes de tous niveaux dans les Hautes-Alpes.
 
 URL canonique : https://photoclubbriancon.github.io/
 Langue : français (fr-FR)
