@@ -489,6 +489,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 
 <main class="content" id="blocksContainer">
+                                <div class="block-wrapper draggable="true" data-index="0">
+                        <div class="block news-item" id="block-0" style="overflow:hidden;">
+                                <h3>Alain nous a présenté The Photographer’s Ephemeris (TPE)</h3>
+                <div class="date"></div>
+                <div><p><span>Lors d’une de nos réunions, </span><strong><span>Alain nous a présenté The Photographer’s Ephemeris (TPE)</span></strong><span>, accessible notamment via </span><strong><span>PhotoEphemeris.com</span></strong><span>.</span></p><p><span><br></span></p><p><span>Cet outil permet de </span><strong><span>préparer une prise de vue en fonction de la position du Soleil et de la Lune</span></strong><span>. À partir d'un emplacement choisi sur la carte, TPE permet notamment de visualiser </span><strong><span>dans quelle direction le Soleil va se lever ou se coucher</span></strong><span>, et ainsi d'anticiper son positionnement par rapport au paysage ou au sujet que l'on souhaite photographier.</span></p><p><span><br></span></p><p><span>C'est particulièrement pratique pour préparer une sortie : prévoir un coucher de soleil derrière un sommet, rechercher un alignement particulier, choisir son emplacement à l'avance ou simplement savoir à quelle heure la lumière sera la plus intéressante.</span></p><p><span><br></span></p><p><span>Pour les membres ayant assisté à la présentation d'Alain, vous pouvez retrouver l'outil ici :</span></p><a href="https://app.photoephemeris.com/" class="content-btn btn-style-gold" target="_blank" rel="noopener noreferrer">Voir plus</a><p><br></p><p><em><span>Cet outil est présenté uniquement parce que nous le trouvons utile pour la pratique photographique. Le Photo Club du Briançonnais n'est ni partenaire ni affilié à TPE.</span></em></p></div>
+            </div>
+        </div>
 
 
 
@@ -1474,7 +1481,7 @@ function saveConfigData(data) {
     }).then(r => r.json()).then(res => { showToast(res.ok ? 'Sauvegardé ✓' : 'Erreur', res.ok); });
 }
 
-let blocks = [];
+let blocks = [{"type":"news","title":"Alain nous a pr\u00e9sent\u00e9 The Photographer\u2019s Ephemeris (TPE)","date":"","content":"<p><span>Lors d\u2019une de nos r\u00e9unions, <\/span><strong><span>Alain nous a pr\u00e9sent\u00e9 The Photographer\u2019s Ephemeris (TPE)<\/span><\/strong><span>, accessible notamment via <\/span><strong><span>PhotoEphemeris.com<\/span><\/strong><span>.<\/span><\/p><p><span><br><\/span><\/p><p><span>Cet outil permet de <\/span><strong><span>pr\u00e9parer une prise de vue en fonction de la position du Soleil et de la Lune<\/span><\/strong><span>. \u00c0 partir d'un emplacement choisi sur la carte, TPE permet notamment de visualiser <\/span><strong><span>dans quelle direction le Soleil va se lever ou se coucher<\/span><\/strong><span>, et ainsi d'anticiper son positionnement par rapport au paysage ou au sujet que l'on souhaite photographier.<\/span><\/p><p><span><br><\/span><\/p><p><span>C'est particuli\u00e8rement pratique pour pr\u00e9parer une sortie : pr\u00e9voir un coucher de soleil derri\u00e8re un sommet, rechercher un alignement particulier, choisir son emplacement \u00e0 l'avance ou simplement savoir \u00e0 quelle heure la lumi\u00e8re sera la plus int\u00e9ressante.<\/span><\/p><p><span><br><\/span><\/p><p><span>Pour les membres ayant assist\u00e9 \u00e0 la pr\u00e9sentation d'Alain, vous pouvez retrouver l'outil ici :<\/span><\/p><a href=\"https:\/\/app.photoephemeris.com\/\" class=\"content-btn btn-style-gold\" target=\"_blank\" rel=\"noopener noreferrer\">Voir plus<\/a><p><br><\/p><p><em><span>Cet outil est pr\u00e9sent\u00e9 uniquement parce que nous le trouvons utile pour la pratique photographique. Le Photo Club du Brian\u00e7onnais n'est ni partenaire ni affili\u00e9 \u00e0 TPE.<\/span><\/em><\/p>","image":"","image_pos":"top","image_size":"medium"}];
 function renderBlocks() {
     const list = document.getElementById('blockList');
     if (!list) return;
