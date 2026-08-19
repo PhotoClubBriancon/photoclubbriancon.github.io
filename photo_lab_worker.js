@@ -173,6 +173,104 @@ function blendAutomaticLook(base, treated, strength) {
     return treated;
 }
 
+function applyWhiteBalance(pixels, temperature, tint) {
+    const warmth = clamp(Number(temperature) || 0, -100, 100) / 100;
+    const magenta = clamp(Number(tint) || 0, -100, 100) / 100;
+    if (warmth === 0 && magenta === 0) return pixels;
+    const gains = [1 + warmth * 0.18 + magenta * 0.05, 1 - magenta * 0.12, 1 - warmth * 0.18 + magenta * 0.05];
+    for (let index = 0; index < pixels.length; index += 4) {
+        pixels[index] = clamp(pixels[index] * gains[0], 0, 255);
+        pixels[index + 1] = clamp(pixels[index + 1] * gains[1], 0, 255);
+        pixels[index + 2] = clamp(pixels[index + 2] * gains[2], 0, 255);
+    }
+    return pixels;
+}
+
+function applyBasicAdjustments(pixels, exposure, contrast, whites, blacks) {
+    const exposureFactor = 2 ** clamp(Number(exposure) || 0, -2, 2);
+    const contrastFactor = 1 + clamp(Number(contrast) || 0, -100, 100) / 100 * 0.78;
+    const whiteAmount = clamp(Number(whites) || 0, -100, 100) / 100;
+    const blackAmount = clamp(Number(blacks) || 0, -100, 100) / 100;
+    if (exposureFactor === 1 && contrastFactor === 1 && whiteAmount === 0 && blackAmount === 0) return pixels;
+    for (let index = 0; index < pixels.length; index += 4) {
+        let channels = [pixels[index] / 255, pixels[index + 1] / 255, pixels[index + 2] / 255]
+            .map(value => clamp((value * exposureFactor - 0.5) * contrastFactor + 0.5, 0, 1));
+        const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+        const whiteMask = smoothstep(0.42, 1, luminance) ** 2;
+        const blackMask = (1 - smoothstep(0, 0.58, luminance)) ** 2;
+        channels = channels.map(value => {
+            if (whiteAmount >= 0) value += (1 - value) * whiteAmount * whiteMask * 0.5;
+            else value += value * whiteAmount * whiteMask * 0.72;
+            if (blackAmount >= 0) value += (1 - value) * blackAmount * blackMask * 0.34;
+            else value += value * blackAmount * blackMask * 0.72;
+            return clamp(value, 0, 1);
+        });
+        pixels[index] = channels[0] * 255;
+        pixels[index + 1] = channels[1] * 255;
+        pixels[index + 2] = channels[2] * 255;
+    }
+    return pixels;
+}
+
+function applyToneCurve(pixels, curve) {
+    if (!curve || curve === 'linear') return pixels;
+    const curveValue = value => {
+        const sCurve = value * value * (3 - 2 * value);
+        if (curve === 'soft-s') return value + (sCurve - value) * 0.42;
+        if (curve === 'strong-s') return value + (sCurve - value) * 0.76;
+        if (curve === 'matte') return 0.055 + (value + (sCurve - value) * 0.28) * 0.925;
+        return value;
+    };
+    for (let index = 0; index < pixels.length; index += 4) {
+        const red = pixels[index] / 255, green = pixels[index + 1] / 255, blue = pixels[index + 2] / 255;
+        const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+        const mapped = clamp(curveValue(luminance), 0, 1);
+        const shift = mapped - luminance;
+        pixels[index] = clamp((red + shift) * 255, 0, 255);
+        pixels[index + 1] = clamp((green + shift) * 255, 0, 255);
+        pixels[index + 2] = clamp((blue + shift) * 255, 0, 255);
+    }
+    return pixels;
+}
+
+function applyVibrance(pixels, vibrance) {
+    const amount = clamp(Number(vibrance) || 0, -100, 100) / 100;
+    if (amount === 0) return pixels;
+    for (let index = 0; index < pixels.length; index += 4) {
+        const red = pixels[index] / 255, green = pixels[index + 1] / 255, blue = pixels[index + 2] / 255;
+        const maximum = Math.max(red, green, blue), minimum = Math.min(red, green, blue);
+        const colorfulness = maximum - minimum;
+        const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+        const factor = 1 + amount * (amount > 0 ? (1 - colorfulness) * 0.9 : 0.72);
+        pixels[index] = clamp((luminance + (red - luminance) * factor) * 255, 0, 255);
+        pixels[index + 1] = clamp((luminance + (green - luminance) * factor) * 255, 0, 255);
+        pixels[index + 2] = clamp((luminance + (blue - luminance) * factor) * 255, 0, 255);
+    }
+    return pixels;
+}
+
+function applyLocalDetail(pixels, width, height, clarity, sharpening) {
+    const clarityAmount = clamp(Number(clarity) || 0, -100, 100) / 100;
+    const sharpeningAmount = clamp(Number(sharpening) || 0, 0, 100) / 100;
+    if (clarityAmount === 0 && sharpeningAmount === 0) return pixels;
+    const source = new Uint8ClampedArray(pixels);
+    const lumaAt = (x, y) => {
+        const index = (clamp(y, 0, height - 1) * width + clamp(x, 0, width - 1)) * 4;
+        return source[index] * 0.2126 + source[index + 1] * 0.7152 + source[index + 2] * 0.0722;
+    };
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const index = (y * width + x) * 4;
+            const center = lumaAt(x, y);
+            const fineAverage = (lumaAt(x - 1, y) + lumaAt(x + 1, y) + lumaAt(x, y - 1) + lumaAt(x, y + 1)) / 4;
+            const broadAverage = (lumaAt(x - 2, y) + lumaAt(x + 2, y) + lumaAt(x, y - 2) + lumaAt(x, y + 2)) / 4;
+            const correction = clamp((center - broadAverage) * clarityAmount * 0.58 + (center - fineAverage) * sharpeningAmount * 0.92, -30, 30);
+            for (let channel = 0; channel < 3; channel++) pixels[index + channel] = clamp(source[index + channel] + correction, 0, 255);
+        }
+    }
+    return pixels;
+}
+
 function applyDehaze(pixels, dehaze) {
     const amount = clamp(Number(dehaze) || 0, -100, 100) / 100;
     if (amount === 0) return pixels;
@@ -230,10 +328,103 @@ function applyTonalAdjustments(pixels, highlights, shadows) {
     return pixels;
 }
 
+function inpaintMask(pixels, width, height, mask) {
+    if (!mask?.some(value => value !== 0)) return pixels;
+    const state = new Uint8Array(mask);
+    const queued = new Uint8Array(mask.length);
+    const queue = [];
+    const neighbors = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+    const hasKnownNeighbor = (x, y) => neighbors.some(([dx, dy]) => {
+        const nx = x + dx, ny = y + dy;
+        return nx >= 0 && nx < width && ny >= 0 && ny < height && state[ny * width + nx] === 0;
+    });
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const pixel = y * width + x;
+            if (state[pixel] && hasKnownNeighbor(x, y)) {
+                queue.push(pixel);
+                queued[pixel] = 1;
+            }
+        }
+    }
+    for (let cursor = 0; cursor < queue.length; cursor++) {
+        const pixel = queue[cursor];
+        if (state[pixel] === 0) continue;
+        const x = pixel % width, y = Math.floor(pixel / width);
+        let red = 0, green = 0, blue = 0, total = 0;
+        for (const [dx, dy] of neighbors) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+            const neighborPixel = ny * width + nx;
+            if (state[neighborPixel] !== 0) continue;
+            const index = neighborPixel * 4;
+            const weight = dx === 0 || dy === 0 ? 1.4 : 1;
+            red += pixels[index] * weight;
+            green += pixels[index + 1] * weight;
+            blue += pixels[index + 2] * weight;
+            total += weight;
+        }
+        if (total === 0) continue;
+        const target = pixel * 4;
+        pixels[target] = red / total;
+        pixels[target + 1] = green / total;
+        pixels[target + 2] = blue / total;
+        state[pixel] = 0;
+        for (const [dx, dy] of neighbors) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+            const neighborPixel = ny * width + nx;
+            if (state[neighborPixel] && !queued[neighborPixel]) {
+                queue.push(neighborPixel);
+                queued[neighborPixel] = 1;
+            }
+        }
+    }
+    return pixels;
+}
+
+function detectDustSpots(pixels, width, height) {
+    const shortEdge = Math.min(width, height);
+    const radius = clamp(Math.round(shortEdge / 230), 3, 9);
+    const stride = shortEdge > 700 ? 2 : 1;
+    const candidates = [];
+    const lumaAt = (x, y) => {
+        const index = (y * width + x) * 4;
+        return pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722;
+    };
+    const ring = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+    for (let y = radius + 1; y < height - radius - 1; y += stride) {
+        for (let x = radius + 1; x < width - radius - 1; x += stride) {
+            const center = lumaAt(x, y);
+            if (center < 5 || center > 235) continue;
+            const samples = ring.map(([dx, dy]) => lumaAt(x + dx * radius, y + dy * radius));
+            const mean = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+            const variance = samples.reduce((sum, value) => sum + (value - mean) ** 2, 0) / samples.length;
+            const darkness = mean - center;
+            if (darkness < 13 || variance > 115) continue;
+            if (center > lumaAt(x - 1, y) || center > lumaAt(x + 1, y) || center > lumaAt(x, y - 1) || center > lumaAt(x, y + 1)) continue;
+            candidates.push({x, y, score: darkness - Math.sqrt(variance) * 0.35});
+        }
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    const selected = [];
+    const minimumDistance = radius * 2.8;
+    for (const candidate of candidates) {
+        if (selected.some(spot => Math.hypot(spot.x - candidate.x, spot.y - candidate.y) < minimumDistance)) continue;
+        selected.push(candidate);
+        if (selected.length >= 80) break;
+    }
+    return selected.map(spot => ({x: spot.x / width, y: spot.y / height, radius: radius * 1.45 / shortEdge}));
+}
+
 self.onmessage = event => {
-    const {id, width, height, buffer, settings} = event.data;
+    const {id, action, width, height, buffer, maskBuffer, settings} = event.data;
     try {
         let pixels = new Uint8ClampedArray(buffer);
+        if (action === 'detectDust') {
+            self.postMessage({id, spots: detectDustSpots(pixels, width, height)});
+            return;
+        }
         const denoise = clamp(Number(settings.denoise) || 0, 0, 3);
         if (denoise > 0) {
             pixels = denoisePass(pixels, width, height, denoise);
@@ -242,9 +433,15 @@ self.onmessage = event => {
         const automaticBase = new Uint8ClampedArray(pixels);
         pixels = applyLook(pixels, settings.preset || 'natural');
         pixels = blendAutomaticLook(automaticBase, pixels, settings.autoStrength ?? 100);
+        pixels = applyWhiteBalance(pixels, settings.temperature, settings.tint);
+        pixels = applyBasicAdjustments(pixels, settings.exposure, settings.contrast, settings.whites, settings.blacks);
+        pixels = applyToneCurve(pixels, settings.toneCurve);
         pixels = applyDehaze(pixels, settings.dehaze);
+        pixels = applyVibrance(pixels, settings.vibrance);
         pixels = applySaturation(pixels, settings.saturation);
         pixels = applyTonalAdjustments(pixels, settings.highlights, settings.shadows);
+        pixels = applyLocalDetail(pixels, width, height, settings.clarity, settings.sharpening);
+        if (maskBuffer) pixels = inpaintMask(pixels, width, height, new Uint8Array(maskBuffer));
         self.postMessage({id, progress: 96});
         self.postMessage({id, width, height, buffer: pixels.buffer}, [pixels.buffer]);
     } catch (error) {
