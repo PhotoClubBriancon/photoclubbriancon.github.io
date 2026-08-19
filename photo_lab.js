@@ -59,6 +59,33 @@
     const healClear = byId('photoLabHealClear');
     const dustDetect = byId('photoLabDustDetect');
     const retouchCount = byId('photoLabRetouchCount');
+    const histogramCanvas = byId('photoLabHistogram');
+    const engineStatus = byId('photoLabEngineStatus');
+    const hslChannels = byId('photoLabHslChannels');
+    const hslHue = byId('photoLabHslHue');
+    const hslHueValue = byId('photoLabHslHueValue');
+    const hslSaturation = byId('photoLabHslSaturation');
+    const hslSaturationValue = byId('photoLabHslSaturationValue');
+    const hslLuminance = byId('photoLabHslLuminance');
+    const hslLuminanceValue = byId('photoLabHslLuminanceValue');
+    const lensDistortion = byId('photoLabLensDistortion');
+    const lensDistortionValue = byId('photoLabLensDistortionValue');
+    const lensVignette = byId('photoLabLensVignette');
+    const lensVignetteValue = byId('photoLabLensVignetteValue');
+    const chromaticAberration = byId('photoLabChromaticAberration');
+    const chromaticAberrationValue = byId('photoLabChromaticAberrationValue');
+    const localRadius = byId('photoLabLocalRadius');
+    const localRadiusValue = byId('photoLabLocalRadiusValue');
+    const localFeather = byId('photoLabLocalFeather');
+    const localFeatherValue = byId('photoLabLocalFeatherValue');
+    const localExposure = byId('photoLabLocalExposure');
+    const localExposureValue = byId('photoLabLocalExposureValue');
+    const localSaturation = byId('photoLabLocalSaturation');
+    const localSaturationValue = byId('photoLabLocalSaturationValue');
+    const localToggle = byId('photoLabLocalToggle');
+    const localUndo = byId('photoLabLocalUndo');
+    const localClear = byId('photoLabLocalClear');
+    const localCount = byId('photoLabLocalCount');
     const zoom = byId('photoLabZoom');
     const zoomValue = byId('photoLabZoomValue');
     const cropRatio = byId('photoLabCropRatio');
@@ -105,8 +132,20 @@
     let retouchMode = false;
     let retouchActions = [];
     let activeRetouchAction = null;
+    let localMaskMode = false;
+    let localMaskActions = [];
+    let activeLocalMaskAction = null;
+    let activeHslChannel = 'red';
+    const hslMixer = Object.fromEntries(['red', 'orange', 'yellow', 'green', 'aqua', 'blue', 'purple', 'magenta'].map(channel => [channel, {hue: 0, saturation: 0, luminance: 0}]));
 
     const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+
+    try {
+        const webgl2 = Boolean(document.createElement('canvas').getContext('webgl2'));
+        engineStatus.textContent = navigator.gpu ? 'WebGPU disponible · WebGL2 actif' : (webgl2 ? 'WebGL2 actif · repli CPU prêt' : 'CPU compatible · mode universel');
+    } catch (_) {
+        engineStatus.textContent = 'CPU compatible · mode universel';
+    }
 
     function setStatus(message, error = false) {
         status.textContent = message;
@@ -129,7 +168,12 @@
         pending.delete(message.id);
         if (message.error) task.reject(new Error(message.error));
         else if (Array.isArray(message.spots)) task.resolve({spots: message.spots});
-        else task.resolve(new ImageData(new Uint8ClampedArray(message.buffer), message.width, message.height));
+        else {
+            const image = new ImageData(new Uint8ClampedArray(message.buffer), message.width, message.height);
+            image.photoLabHistogram = message.histogram || null;
+            image.photoLabAccelerator = message.accelerator || 'cpu';
+            task.resolve(image);
+        }
     };
 
     worker.onerror = () => {
@@ -156,6 +200,12 @@
             toneCurve: toneCurve.value,
             clarity: Number(clarity.value),
             sharpening: Number(sharpening.value),
+            hslMixer,
+            lensDistortion: Number(lensDistortion.value),
+            lensVignette: Number(lensVignette.value),
+            chromaticAberration: Number(chromaticAberration.value),
+            localExposure: Number(localExposure.value),
+            localSaturation: Number(localSaturation.value),
         };
     }
 
@@ -186,6 +236,32 @@
         return mask;
     }
 
+    function buildLocalMask(width, height) {
+        const points = localMaskActions.flat();
+        if (!points.length) return null;
+        const mask = new Uint8Array(width * height);
+        const shortEdge = Math.min(width, height);
+        for (const point of points) {
+            const centerX = Math.round(point.x * (width - 1));
+            const centerY = Math.round(point.y * (height - 1));
+            const radius = Math.max(1, Math.round(point.radius * shortEdge));
+            const featherStart = radius * clamp(1 - point.feather, 0.02, 1);
+            const startX = Math.max(0, centerX - radius), endX = Math.min(width - 1, centerX + radius);
+            const startY = Math.max(0, centerY - radius), endY = Math.min(height - 1, centerY + radius);
+            for (let y = startY; y <= endY; y++) {
+                const dy = y - centerY;
+                for (let x = startX; x <= endX; x++) {
+                    const distance = Math.hypot(x - centerX, dy);
+                    if (distance > radius) continue;
+                    const strength = distance <= featherStart ? 255 : Math.round(255 * (1 - (distance - featherStart) / Math.max(1, radius - featherStart)));
+                    const pixel = y * width + x;
+                    mask[pixel] = Math.max(mask[pixel], strength);
+                }
+            }
+        }
+        return mask;
+    }
+
     function renderRetouchOverlay() {
         if (retouchCanvas.width !== originalCanvas.width || retouchCanvas.height !== originalCanvas.height) {
             retouchCanvas.width = originalCanvas.width;
@@ -203,6 +279,14 @@
             context.fill();
             context.stroke();
         }
+        context.fillStyle = 'rgba(48,170,255,.2)';
+        context.strokeStyle = 'rgba(94,201,255,.9)';
+        for (const point of localMaskActions.flat()) {
+            context.beginPath();
+            context.arc(point.x * retouchCanvas.width, point.y * retouchCanvas.height, point.radius * shortEdge, 0, Math.PI * 2);
+            context.fill();
+            context.stroke();
+        }
     }
 
     function updateRetouchUi() {
@@ -214,17 +298,39 @@
     }
 
     function clearRetouches(message = false) {
-        if (!retouchActions.length) return;
+        if (!retouchActions.length && !localMaskActions.length) return;
         retouchActions = [];
         activeRetouchAction = null;
+        localMaskActions = [];
+        activeLocalMaskAction = null;
         updateRetouchUi();
+        updateLocalMaskUi();
         schedulePreview();
         if (message) setStatus('Corrections locales réinitialisées après le changement de cadrage.');
     }
 
+    function updateLocalMaskUi() {
+        const count = localMaskActions.length;
+        localUndo.disabled = count === 0;
+        localClear.disabled = count === 0;
+        localCount.textContent = count === 0 ? 'Aucun masque peint' : `${count} trait${count > 1 ? 's' : ''} de masque`;
+        renderRetouchOverlay();
+    }
+
+    function setLocalMaskMode(enabled) {
+        localMaskMode = enabled;
+        if (enabled) setRetouchMode(false);
+        retouchCanvas.classList.toggle('active', enabled || retouchMode);
+        localToggle.setAttribute('aria-pressed', String(enabled));
+        localToggle.classList.toggle('btn-gold', enabled);
+        localToggle.classList.toggle('btn-outline', !enabled);
+        localToggle.textContent = enabled ? 'Masque actif · peignez sur la photo' : 'Peindre le masque';
+    }
+
     function setRetouchMode(enabled) {
         retouchMode = enabled;
-        retouchCanvas.classList.toggle('active', enabled);
+        if (enabled) setLocalMaskMode(false);
+        retouchCanvas.classList.toggle('active', enabled || localMaskMode);
         healToggle.setAttribute('aria-pressed', String(enabled));
         healToggle.classList.toggle('btn-gold', enabled);
         healToggle.classList.toggle('btn-outline', !enabled);
@@ -249,19 +355,37 @@
         renderRetouchOverlay();
     }
 
+    function appendLocalMaskPoint(event) {
+        if (!activeLocalMaskAction) return;
+        const rect = retouchCanvas.getBoundingClientRect();
+        const point = {
+            x: clamp((event.clientX - rect.left) / Math.max(1, rect.width), 0, 1),
+            y: clamp((event.clientY - rect.top) / Math.max(1, rect.height), 0, 1),
+            radius: Number(localRadius.value) / Math.max(1, Math.min(rect.width, rect.height)),
+            feather: Number(localFeather.value) / 100,
+        };
+        const previous = activeLocalMaskAction.at(-1);
+        if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) < point.radius * 0.25) return;
+        activeLocalMaskAction.push(point);
+        renderRetouchOverlay();
+    }
+
     function processImageData(imageData, onProgress) {
         const id = ++requestSequence;
         return new Promise((resolve, reject) => {
             pending.set(id, {resolve, reject, onProgress});
             const retouchMask = buildRetouchMask(imageData.width, imageData.height);
+            const localMask = buildLocalMask(imageData.width, imageData.height);
             const transferables = [imageData.data.buffer];
             if (retouchMask) transferables.push(retouchMask.buffer);
+            if (localMask) transferables.push(localMask.buffer);
             worker.postMessage({
                 id,
                 width: imageData.width,
                 height: imageData.height,
                 buffer: imageData.data.buffer,
                 maskBuffer: retouchMask?.buffer || null,
+                localMaskBuffer: localMask?.buffer || null,
                 settings: currentSettings(),
             }, transferables);
         });
@@ -329,6 +453,8 @@
             processedCanvas.width = result.width;
             processedCanvas.height = result.height;
             processedCanvas.getContext('2d', {alpha: false}).putImageData(result, 0, 0);
+            drawHistogram(result.photoLabHistogram);
+            if (result.photoLabAccelerator === 'webgl2') engineStatus.textContent = 'WebGL2 actif · repli CPU prêt';
             updateCropOverlay();
             renderRetouchOverlay();
             setProgress(100);
@@ -344,6 +470,31 @@
                 window.setTimeout(updatePreview, 16);
             }
         }
+    }
+
+    function drawHistogram(histogram) {
+        if (!histogramCanvas || !histogram) return;
+        const context = histogramCanvas.getContext('2d');
+        const width = histogramCanvas.width, height = histogramCanvas.height;
+        context.clearRect(0, 0, width, height);
+        context.strokeStyle = 'rgba(255,255,255,.08)';
+        context.lineWidth = 1;
+        for (let line = 1; line < 4; line++) {
+            context.beginPath(); context.moveTo(width * line / 4, 0); context.lineTo(width * line / 4, height); context.stroke();
+        }
+        const maximum = Math.max(1, ...histogram.luma.slice(2, 254));
+        const draw = (values, color, alpha = 0.9) => {
+            context.beginPath();
+            for (let value = 0; value < 256; value++) {
+                const x = value / 255 * width;
+                const normalized = Math.log1p(values[value]) / Math.log1p(maximum);
+                const y = height - normalized * (height - 4);
+                if (value === 0) context.moveTo(x, y); else context.lineTo(x, y);
+            }
+            context.strokeStyle = color; context.globalAlpha = alpha; context.lineWidth = 1.35; context.stroke(); context.globalAlpha = 1;
+        };
+        draw(histogram.luma, '#e8e8e8', 0.65);
+        draw(histogram.red, '#ff5b56'); draw(histogram.green, '#52d68a'); draw(histogram.blue, '#5795ff');
     }
 
     function drawPreviewSource() {
@@ -437,8 +588,12 @@
             sourceFile = file;
             retouchActions = [];
             activeRetouchAction = null;
+            localMaskActions = [];
+            activeLocalMaskAction = null;
             setRetouchMode(false);
+            setLocalMaskMode(false);
             updateRetouchUi();
+            updateLocalMaskUi();
             crop = {x: 0, y: 0, width: 1, height: 1};
             rotationDegrees = 0;
             rotation.value = '0';
@@ -450,6 +605,7 @@
             drawPreviewSource();
             workspace.style.display = 'grid';
             drop.style.display = 'none';
+            root.classList.add('has-photo');
             await updatePreview();
         } catch (error) {
             sourceBitmap?.close?.();
@@ -663,8 +819,13 @@
         input.value = '';
         retouchActions = [];
         activeRetouchAction = null;
+        localMaskActions = [];
+        activeLocalMaskAction = null;
         setRetouchMode(false);
+        setLocalMaskMode(false);
         updateRetouchUi();
+        updateLocalMaskUi();
+        root.classList.remove('has-photo');
         workspace.style.display = 'none';
         drop.style.display = 'block';
         cropOverlay.classList.remove('active');
@@ -692,7 +853,7 @@
 
     compare.addEventListener('input', updateComparison);
     preview.addEventListener('pointerdown', event => {
-        if (!sourceBitmap || horizonMode || cropEditing || retouchMode || event.button !== 0) return;
+        if (!sourceBitmap || horizonMode || cropEditing || retouchMode || localMaskMode || event.button !== 0) return;
         const rect = originalCanvas.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
         event.preventDefault();
@@ -726,6 +887,26 @@
     clarity.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
     sharpening.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
     toneCurve.addEventListener('change', () => { updateCurvePreview(); schedulePreview(); });
+    for (const control of [lensDistortion, lensVignette, chromaticAberration]) control.addEventListener('input', () => {
+        lensDistortionValue.value = signedValue(lensDistortion.value);
+        lensVignetteValue.value = signedValue(lensVignette.value);
+        chromaticAberrationValue.value = signedValue(chromaticAberration.value);
+        schedulePreview();
+    });
+    hslChannels.querySelectorAll('[data-hsl-channel]').forEach(button => button.addEventListener('click', () => {
+        activeHslChannel = button.dataset.hslChannel;
+        hslChannels.querySelectorAll('[data-hsl-channel]').forEach(candidate => candidate.classList.toggle('active', candidate === button));
+        const values = hslMixer[activeHslChannel];
+        hslHue.value = values.hue; hslSaturation.value = values.saturation; hslLuminance.value = values.luminance;
+        hslHueValue.value = signedValue(values.hue); hslSaturationValue.value = signedValue(values.saturation); hslLuminanceValue.value = signedValue(values.luminance);
+    }));
+    for (const [control, key, output] of [[hslHue, 'hue', hslHueValue], [hslSaturation, 'saturation', hslSaturationValue], [hslLuminance, 'luminance', hslLuminanceValue]]) {
+        control.addEventListener('input', () => {
+            hslMixer[activeHslChannel][key] = Number(control.value);
+            output.value = signedValue(control.value);
+            schedulePreview();
+        });
+    }
     zoom.addEventListener('input', updateZoom);
     preview.addEventListener('dblclick', () => { if (!horizonMode) { zoom.value = '100'; updateZoom(); } });
     quality.addEventListener('input', () => { qualityValue.value = `${quality.value} %`; });
@@ -733,14 +914,19 @@
 
     advancedToggle.addEventListener('click', () => {
         const enabled = !root.classList.contains('advanced-mode');
-        if (!enabled) setRetouchMode(false);
+        if (!enabled) { setRetouchMode(false); setLocalMaskMode(false); }
         root.classList.toggle('advanced-mode', enabled);
         advancedToggle.setAttribute('aria-pressed', String(enabled));
         advancedToggle.textContent = enabled ? 'Mode simple' : 'Réglages avancés';
     });
 
     resetAdvanced.addEventListener('click', () => {
-        for (const control of [exposure, contrast, whites, blacks, temperature, tint, vibrance, clarity, sharpening]) control.value = '0';
+        for (const control of [exposure, contrast, whites, blacks, temperature, tint, vibrance, clarity, sharpening, lensDistortion, lensVignette, chromaticAberration, localExposure, localSaturation]) control.value = '0';
+        for (const values of Object.values(hslMixer)) Object.assign(values, {hue: 0, saturation: 0, luminance: 0});
+        hslHue.value = hslSaturation.value = hslLuminance.value = '0';
+        hslHueValue.value = hslSaturationValue.value = hslLuminanceValue.value = '0';
+        lensDistortionValue.value = lensVignetteValue.value = chromaticAberrationValue.value = '0';
+        localExposureValue.value = '0,0 IL'; localSaturationValue.value = '0';
         toneCurve.value = 'linear';
         updateAdvancedOutputs();
         schedulePreview();
@@ -754,26 +940,40 @@
         schedulePreview();
     });
     healClear.addEventListener('click', () => clearRetouches());
+    localRadius.addEventListener('input', () => { localRadiusValue.value = `${localRadius.value} px`; });
+    localFeather.addEventListener('input', () => { localFeatherValue.value = `${localFeather.value} %`; });
+    localExposure.addEventListener('input', () => { localExposureValue.value = `${Number(localExposure.value).toFixed(1).replace('.', ',')} IL`; schedulePreview(); });
+    localSaturation.addEventListener('input', () => { localSaturationValue.value = signedValue(localSaturation.value); schedulePreview(); });
+    localToggle.addEventListener('click', () => setLocalMaskMode(!localMaskMode));
+    localUndo.addEventListener('click', () => { localMaskActions.pop(); updateLocalMaskUi(); schedulePreview(); });
+    localClear.addEventListener('click', () => { localMaskActions = []; updateLocalMaskUi(); schedulePreview(); });
 
     retouchCanvas.addEventListener('pointerdown', event => {
-        if (!retouchMode || !sourceBitmap || event.button !== 0) return;
+        if ((!retouchMode && !localMaskMode) || !sourceBitmap || event.button !== 0) return;
         event.preventDefault();
-        activeRetouchAction = [];
-        retouchActions.push(activeRetouchAction);
+        if (retouchMode) {
+            activeRetouchAction = [];
+            retouchActions.push(activeRetouchAction);
+        } else {
+            activeLocalMaskAction = [];
+            localMaskActions.push(activeLocalMaskAction);
+        }
         retouchCanvas.setPointerCapture?.(event.pointerId);
-        appendRetouchPoint(event);
-        updateRetouchUi();
+        if (retouchMode) { appendRetouchPoint(event); updateRetouchUi(); }
+        else { appendLocalMaskPoint(event); updateLocalMaskUi(); }
     });
     retouchCanvas.addEventListener('pointermove', event => {
-        if (!activeRetouchAction) return;
+        if (!activeRetouchAction && !activeLocalMaskAction) return;
         event.preventDefault();
-        appendRetouchPoint(event);
+        if (activeRetouchAction) appendRetouchPoint(event); else appendLocalMaskPoint(event);
     });
     const finishRetouchStroke = event => {
-        if (!activeRetouchAction) return;
+        if (!activeRetouchAction && !activeLocalMaskAction) return;
         activeRetouchAction = null;
+        activeLocalMaskAction = null;
         retouchCanvas.releasePointerCapture?.(event.pointerId);
         updateRetouchUi();
+        updateLocalMaskUi();
         schedulePreview();
     };
     retouchCanvas.addEventListener('pointerup', finishRetouchStroke);

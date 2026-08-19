@@ -370,7 +370,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-divider::before { content:'↔'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:#17120a; font-weight:800; }
 .photo-lab-compare { width:100%; accent-color:var(--gold); margin:14px 0 4px; }
 .photo-lab-compare-help { display:flex; justify-content:space-between; gap:12px; color:var(--text-dim); font-size:.76rem; margin-top:10px; }
-.photo-lab-view-controls { display:grid; grid-template-columns:1fr auto; gap:10px 16px; align-items:center; margin-top:12px; }
+.photo-lab-view-controls { display:grid; grid-template-columns:1fr auto; gap:8px 16px; align-items:center; margin-top:10px; padding:9px 12px; border:1px solid rgba(212,175,55,.18); border-radius:10px; background:#101010; }
 .photo-lab-view-controls label { color:var(--text-dim); font-size:.78rem; }
 .photo-lab-view-controls output { color:var(--gold); font-size:.82rem; font-weight:700; }
 .photo-lab-view-controls input { grid-column:1/-1; width:100%; accent-color:var(--gold); }
@@ -407,6 +407,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-retouch-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px; }
 .photo-lab-retouch-actions .wide { grid-column:1/-1; }
 .photo-lab-retouch-count { display:block; margin-top:10px; color:#79d9b4; font-size:.74rem; }
+.photo-lab-engine { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; margin-bottom:10px; border:1px solid rgba(212,175,55,.2); border-radius:9px; background:#0c0c0c; color:var(--text-dim); font-size:.72rem; }
+.photo-lab-engine strong { color:#79d9b4; font-size:.74rem; }
+.photo-lab-histogram { width:100%; height:104px; display:block; border:1px solid rgba(255,255,255,.09); border-radius:8px; background:linear-gradient(#111,#080808); }
+.photo-lab-hsl-channel { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:12px; }
+.photo-lab-hsl-channel button { min-width:0; padding:7px 3px; border:1px solid rgba(255,255,255,.13); border-radius:6px; color:#ddd; background:#171717; font-size:.68rem; cursor:pointer; }
+.photo-lab-hsl-channel button.active { border-color:var(--gold); color:var(--gold); box-shadow:inset 0 0 0 1px rgba(212,175,55,.22); }
+.photo-lab-local-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.photo-lab-local-actions .wide { grid-column:1/-1; }
+@media (min-width:1100px) {
+    .photo-lab.has-photo { width:100vw; max-width:none; box-sizing:border-box; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw); padding-left:clamp(8px,1vw,16px); padding-right:clamp(8px,1vw,16px); border-left:0; border-right:0; border-radius:0; }
+    .photo-lab.has-photo .photo-lab-workspace { grid-template-columns:minmax(0,1fr) clamp(320px,25vw,430px); }
+}
 .photo-lab:fullscreen { width:100vw; height:100vh; max-width:none; margin:0; padding:10px; border:0; border-radius:0; overflow:hidden; background:#101010; }
 .photo-lab:fullscreen .photo-lab-head { margin-bottom:8px; }
 .photo-lab:fullscreen .photo-lab-head p { display:none; }
@@ -530,7 +542,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                 <input class="photo-lab-compare" id="photoLabCompare" type="range" min="0" max="100" value="50">
                 <div class="photo-lab-view-controls">
                     <label for="photoLabZoom">Zoom de l’aperçu</label><output id="photoLabZoomValue">Ajusté à l’écran</output>
-                    <input id="photoLabZoom" type="range" min="50" max="200" step="10" value="100">
+                    <input id="photoLabZoom" type="range" min="50" max="400" step="10" value="100" aria-label="Zoom de 50 à 400 pour cent">
                 </div>
                 </div>
 
@@ -538,6 +550,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                 <div class="photo-lab-controls">
                     <div class="photo-lab-panel">
                         <div id="photoLabRenderPanel">
+                        <div class="photo-lab-engine photo-lab-advanced"><span>Moteur de calcul</span><strong id="photoLabEngineStatus">Détection…</strong></div>
+                        <details class="photo-lab-section photo-lab-advanced" open>
+                            <summary>Histogramme RVB</summary>
+                            <div class="photo-lab-section-body">
+                                <canvas class="photo-lab-histogram" id="photoLabHistogram" width="360" height="104" aria-label="Histogramme rouge, vert, bleu et luminosité"></canvas>
+                                <p class="photo-lab-section-note">Mis à jour avec l’aperçu traité. Les pics à gauche représentent les ombres, ceux à droite les hautes lumières.</p>
+                            </div>
+                        </details>
                         <details class="photo-lab-section" open>
                             <summary>Préréglages</summary>
                             <div class="photo-lab-section-body">
@@ -620,6 +640,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                             </div>
                         </details>
                         <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Mélangeur HSL</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-hsl-channel" id="photoLabHslChannels" role="group" aria-label="Couleur à régler">
+                                    <button type="button" class="active" data-hsl-channel="red">Rouge</button><button type="button" data-hsl-channel="orange">Orange</button><button type="button" data-hsl-channel="yellow">Jaune</button><button type="button" data-hsl-channel="green">Vert</button>
+                                    <button type="button" data-hsl-channel="aqua">Aqua</button><button type="button" data-hsl-channel="blue">Bleu</button><button type="button" data-hsl-channel="purple">Violet</button><button type="button" data-hsl-channel="magenta">Magenta</button>
+                                </div>
+                                <div class="photo-lab-row"><label for="photoLabHslHue">Teinte</label><output id="photoLabHslHueValue">0</output><input id="photoLabHslHue" type="range" min="-100" max="100" value="0"></div>
+                                <div class="photo-lab-row"><label for="photoLabHslSaturation">Saturation</label><output id="photoLabHslSaturationValue">0</output><input id="photoLabHslSaturation" type="range" min="-100" max="100" value="0"></div>
+                                <div class="photo-lab-row"><label for="photoLabHslLuminance">Luminance</label><output id="photoLabHslLuminanceValue">0</output><input id="photoLabHslLuminance" type="range" min="-100" max="100" value="0"></div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Corrections optiques</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row"><label for="photoLabLensDistortion">Distorsion de l’objectif</label><output id="photoLabLensDistortionValue">0</output><input id="photoLabLensDistortion" type="range" min="-100" max="100" value="0"></div>
+                                <div class="photo-lab-row"><label for="photoLabLensVignette">Vignetage</label><output id="photoLabLensVignetteValue">0</output><input id="photoLabLensVignette" type="range" min="-100" max="100" value="0"></div>
+                                <div class="photo-lab-row"><label for="photoLabChromaticAberration">Aberration chromatique</label><output id="photoLabChromaticAberrationValue">0</output><input id="photoLabChromaticAberration" type="range" min="-100" max="100" value="0"></div>
+                                <p class="photo-lab-section-note">La distorsion et les franges colorées utilisent WebGL2 quand le navigateur l’autorise, avec un repli CPU automatique.</p>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section photo-lab-advanced">
                             <summary>Courbe des tonalités</summary>
                             <div class="photo-lab-section-body">
                                 <label for="photoLabToneCurve" style="display:block;color:var(--text-dim);font-size:.78rem;margin-bottom:6px;">Préréglage de courbe</label>
@@ -673,6 +714,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 </div>
                                 <span class="photo-lab-retouch-count" id="photoLabRetouchCount">Aucune correction locale</span>
                                 <p class="photo-lab-section-note">Peignez sur un petit objet : la zone est reconstruite à partir de son contour. La détection des poussières recherche de petites taches sombres dans les surfaces régulières. Vérifiez toujours le résultat avec Avant / Après.</p>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Masque local</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row"><label for="photoLabLocalRadius">Taille du pinceau</label><output id="photoLabLocalRadiusValue">80 px</output><input id="photoLabLocalRadius" type="range" min="10" max="240" value="80"></div>
+                                <div class="photo-lab-row"><label for="photoLabLocalFeather">Progressivité</label><output id="photoLabLocalFeatherValue">65 %</output><input id="photoLabLocalFeather" type="range" min="0" max="100" value="65"></div>
+                                <div class="photo-lab-row"><label for="photoLabLocalExposure">Exposition locale</label><output id="photoLabLocalExposureValue">0,0 IL</output><input id="photoLabLocalExposure" type="range" min="-2" max="2" step="0.1" value="0"></div>
+                                <div class="photo-lab-row"><label for="photoLabLocalSaturation">Saturation locale</label><output id="photoLabLocalSaturationValue">0</output><input id="photoLabLocalSaturation" type="range" min="-100" max="100" value="0"></div>
+                                <div class="photo-lab-local-actions">
+                                    <button type="button" class="btn btn-outline wide" id="photoLabLocalToggle" aria-pressed="false">Peindre le masque</button>
+                                    <button type="button" class="btn btn-outline" id="photoLabLocalUndo" disabled>Annuler</button>
+                                    <button type="button" class="btn btn-outline" id="photoLabLocalClear" disabled>Effacer</button>
+                                </div>
+                                <span class="photo-lab-retouch-count" id="photoLabLocalCount">Aucun masque peint</span>
+                                <p class="photo-lab-section-note">Peignez en bleu sur le sujet ou une zone précise, puis ajustez l’exposition et la saturation. Le contour progressif évite les démarcations.</p>
                             </div>
                         </details>
                         </div>
