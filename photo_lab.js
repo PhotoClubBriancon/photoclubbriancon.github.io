@@ -14,6 +14,7 @@
     const processedCanvas = byId('photoLabProcessed');
     const compare = byId('photoLabCompare');
     const divider = byId('photoLabDivider');
+    const fullscreenButton = byId('photoLabFullscreen');
     const cropOverlay = byId('photoLabCropOverlay');
     const horizonLine = byId('photoLabHorizonLine');
     const denoise = byId('photoLabDenoise');
@@ -36,6 +37,7 @@
     const horizonButton = byId('photoLabHorizon');
     const cropReset = byId('photoLabCropReset');
     const cropHelp = byId('photoLabCropHelp');
+    const cropSection = byId('photoLabCropSection');
     const quality = byId('photoLabQuality');
     const qualityValue = byId('photoLabQualityValue');
     const format = byId('photoLabFormat');
@@ -49,7 +51,7 @@
     const worker = new Worker('/photo_lab_worker.js');
     const pending = new Map();
     const denoiseLabels = ['Aucun', 'Léger', 'Moyen', 'Fort'];
-    const rawExtensions = new Set(['3fr', 'arw', 'cr2', 'cr3', 'dng', 'erf', 'kdc', 'mos', 'mrw', 'nef', 'nrw', 'orf', 'pef', 'raf', 'raw', 'rw2', 'sr2', 'srf']);
+    const rawExtensions = new Set(['3fr', 'ari', 'arw', 'bay', 'cap', 'cine', 'cr2', 'cr3', 'crw', 'dcr', 'dng', 'erf', 'fff', 'gpr', 'iiq', 'kdc', 'mdc', 'mef', 'mos', 'mrw', 'nef', 'nrw', 'orf', 'pef', 'ptx', 'raf', 'raw', 'rw2', 'rwl', 'sr2', 'srf', 'srw', 'x3f']);
     const suffixes = {natural: 'auto-naturel', dynamic: 'auto-dynamique', silhouette: 'auto-silhouette', bw: 'noir-blanc', 'bw-contrast': 'noir-blanc-contraste', none: 'original'};
     const MAX_CONTEST_BYTES = Math.round(2.7 * 1024 * 1024);
 
@@ -67,6 +69,7 @@
     let cropDrag = null;
     let horizonMode = false;
     let horizonStart = null;
+    let compareDragging = false;
 
     const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 
@@ -280,7 +283,7 @@
             zoom.value = '100';
             updateZoom();
             drawPreviewSource();
-            workspace.style.display = 'block';
+            workspace.style.display = 'grid';
             drop.style.display = 'none';
             await updatePreview();
         } catch (error) {
@@ -448,13 +451,7 @@
 
     function setCropEditing(enabled) {
         cropEditing = enabled;
-        root.querySelectorAll('[data-lab-tab]').forEach(button => {
-            const active = (button.dataset.labTab === 'crop') === enabled;
-            button.classList.toggle('active', active);
-            button.setAttribute('aria-selected', String(active));
-        });
-        byId('photoLabRenderPanel').classList.toggle('active', !enabled);
-        byId('photoLabCropPanel').classList.toggle('active', enabled);
+        preview.classList.toggle('crop-mode', enabled);
         exitHorizonMode();
         if (sourceBitmap) scheduleGeometryPreview();
     }
@@ -487,10 +484,38 @@
     for (const eventName of ['dragleave', 'drop']) drop.addEventListener(eventName, event => { event.preventDefault(); drop.classList.remove('dragover'); });
     drop.addEventListener('drop', event => openFile(event.dataTransfer?.files?.[0]));
 
-    compare.addEventListener('input', () => {
+    function updateComparison() {
         processedCanvas.style.clipPath = `inset(0 0 0 ${compare.value}%)`;
         divider.style.left = `${compare.value}%`;
+    }
+
+    function updateComparisonFromPointer(event) {
+        const rect = originalCanvas.getBoundingClientRect();
+        if (!rect.width) return;
+        compare.value = String(Math.round(clamp((event.clientX - rect.left) / rect.width * 100, 0, 100)));
+        updateComparison();
+    }
+
+    compare.addEventListener('input', updateComparison);
+    preview.addEventListener('pointerdown', event => {
+        if (!sourceBitmap || horizonMode || cropEditing || event.button !== 0) return;
+        const rect = originalCanvas.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
+        event.preventDefault();
+        compareDragging = true;
+        preview.setPointerCapture?.(event.pointerId);
+        updateComparisonFromPointer(event);
     });
+    preview.addEventListener('pointermove', event => {
+        if (compareDragging) updateComparisonFromPointer(event);
+    });
+    const finishComparison = event => {
+        if (!compareDragging) return;
+        compareDragging = false;
+        preview.releasePointerCapture?.(event.pointerId);
+    };
+    preview.addEventListener('pointerup', finishComparison);
+    preview.addEventListener('pointercancel', finishComparison);
     denoise.addEventListener('input', () => { denoiseValue.value = denoiseLabels[Number(denoise.value)]; schedulePreview(); });
     autoStrength.addEventListener('input', () => { autoStrengthValue.value = `${autoStrength.value} %`; schedulePreview(); });
     dehaze.addEventListener('input', () => { dehazeValue.value = signedValue(dehaze.value); schedulePreview(); });
@@ -512,7 +537,7 @@
         schedulePreview();
     }));
 
-    root.querySelectorAll('[data-lab-tab]').forEach(button => button.addEventListener('click', () => setCropEditing(button.dataset.labTab === 'crop')));
+    cropSection.addEventListener('toggle', () => setCropEditing(cropSection.open));
     cropRatio.addEventListener('change', () => {
         const ratio = fixedRatio();
         if (ratio) centeredCropForRatio(ratio);
@@ -623,6 +648,19 @@
     });
 
     window.addEventListener('resize', () => window.requestAnimationFrame(updateCropOverlay));
+    fullscreenButton?.addEventListener('click', async () => {
+        try {
+            if (document.fullscreenElement === root) await document.exitFullscreen();
+            else await root.requestFullscreen();
+        } catch (error) {
+            setStatus('Le plein écran est bloqué par ce navigateur.', true);
+        }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        if (!fullscreenButton) return;
+        fullscreenButton.textContent = document.fullscreenElement === root ? '⤢ Quitter le plein écran' : '⛶ Plein écran';
+        window.requestAnimationFrame(updateCropOverlay);
+    });
     downloadCompetition.addEventListener('click', () => downloadResult('competition'));
     downloadFull.addEventListener('click', () => downloadResult('full'));
     clear.addEventListener('click', clearFile);

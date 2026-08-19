@@ -344,10 +344,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .analytics-empty { color:var(--text-dim); text-align:center; padding:55px 12px; }
 .photo-lab { max-width:1000px; margin:0 auto 32px; padding:clamp(18px,3vw,30px); background:linear-gradient(145deg,#1b1a18,#111); border:1px solid rgba(212,175,55,.22); border-radius:18px; }
 .photo-lab-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; flex-wrap:wrap; margin-bottom:20px; }
+.photo-lab-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; flex-wrap:wrap; }
 .photo-lab-badge { color:#79d9b4; background:rgba(30,169,124,.12); border:1px solid rgba(30,169,124,.32); border-radius:999px; padding:7px 12px; font-size:.76rem; white-space:nowrap; }
 .photo-lab-drop { display:block; border:1px dashed rgba(212,175,55,.5); border-radius:14px; padding:24px; text-align:center; cursor:pointer; background:rgba(212,175,55,.04); transition:.2s; }
 .photo-lab-drop:hover,.photo-lab-drop.dragover { border-color:var(--gold); background:rgba(212,175,55,.1); }
 .photo-lab-workspace { display:none; margin-top:22px; }
+.photo-lab-canvas-column,.photo-lab-sidebar { min-width:0; }
 .photo-lab-preview { position:relative; width:100%; height:clamp(240px,55vw,620px); overflow:auto; overscroll-behavior:contain; border-radius:14px; background:#080808; scrollbar-color:var(--gold) #191919; }
 .photo-lab-preview-stage { position:relative; width:100%; height:100%; min-width:100%; min-height:100%; display:grid; place-items:center; transition:width .18s ease,height .18s ease; }
 .photo-lab-preview canvas { display:block; max-width:100%; max-height:100%; width:auto; height:auto; grid-area:1/1; }
@@ -362,20 +364,41 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-crop-handle[data-handle=se] { right:-10px; bottom:-10px; cursor:nwse-resize; }
 .photo-lab-horizon-line { position:absolute; z-index:6; height:3px; background:#72dcff; box-shadow:0 0 0 1px rgba(0,0,0,.75); transform-origin:0 50%; pointer-events:none; display:none; }
 .photo-lab-preview.horizon-mode { cursor:crosshair; }
-.photo-lab-divider { position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.5); pointer-events:none; }
+.photo-lab-divider { position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.5); pointer-events:none; z-index:3; }
 .photo-lab-divider::before { content:'↔'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:#17120a; font-weight:800; }
 .photo-lab-compare { width:100%; accent-color:var(--gold); margin:14px 0 4px; }
+.photo-lab-compare-help { display:flex; justify-content:space-between; gap:12px; color:var(--text-dim); font-size:.76rem; margin-top:10px; }
 .photo-lab-view-controls { display:grid; grid-template-columns:1fr auto; gap:10px 16px; align-items:center; margin-top:12px; }
 .photo-lab-view-controls label { color:var(--text-dim); font-size:.78rem; }
 .photo-lab-view-controls output { color:var(--gold); font-size:.82rem; font-weight:700; }
 .photo-lab-view-controls input { grid-column:1/-1; width:100%; accent-color:var(--gold); }
 .photo-lab-controls { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(240px,.8fr); gap:18px; margin-top:18px; }
 .photo-lab-panel { background:#101010; border:1px solid rgba(212,175,55,.15); border-radius:13px; padding:16px; }
-.photo-lab-editor-tabs { display:flex; gap:8px; margin-bottom:15px; border-bottom:1px solid rgba(212,175,55,.16); padding-bottom:12px; }
-.photo-lab-editor-tab { flex:1; border:1px solid rgba(212,175,55,.25); border-radius:9px; padding:9px; background:#191919; color:var(--text-dim); font:inherit; cursor:pointer; }
-.photo-lab-editor-tab.active { color:#17120a; background:var(--gold); border-color:var(--gold); font-weight:700; }
-.photo-lab-tab-content { display:none; }
-.photo-lab-tab-content.active { display:block; }
+.content { max-width:none; padding-left:clamp(8px,1.2vw,22px); padding-right:clamp(8px,1.2vw,22px); }
+.photo-lab { max-width:none; padding:clamp(12px,1.4vw,22px); }
+.photo-lab-workspace { grid-template-columns:minmax(0,1fr) clamp(310px,28vw,410px); gap:15px; align-items:start; }
+.photo-lab-canvas-column { position:sticky; top:78px; }
+.photo-lab-preview { height:calc(100vh - 245px); min-height:430px; cursor:ew-resize; }
+.photo-lab-preview.horizon-mode { cursor:crosshair; }
+.photo-lab-preview.crop-mode { cursor:default; }
+.photo-lab-sidebar { max-height:calc(100vh - 96px); overflow:auto; padding-right:3px; scrollbar-color:var(--gold) #191919; }
+.photo-lab-controls { display:block; margin-top:0; }
+.photo-lab-panel { padding:0; overflow:hidden; }
+.photo-lab-section { border-bottom:1px solid rgba(212,175,55,.14); background:#101010; }
+.photo-lab-section:last-child { border-bottom:0; }
+.photo-lab-section summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 15px; color:var(--gold); font-weight:700; cursor:pointer; list-style:none; user-select:none; }
+.photo-lab-section summary::-webkit-details-marker { display:none; }
+.photo-lab-section summary::after { content:'⌄'; color:var(--text-dim); font-size:1.1rem; transition:transform .18s ease; }
+.photo-lab-section[open] summary::after { transform:rotate(180deg); }
+.photo-lab-section-body { padding:0 15px 16px; }
+.photo-lab-section-note { margin:9px 0 0; color:var(--text-dim); font-size:.74rem; line-height:1.5; }
+.photo-lab-fullscreen { padding:7px 11px; font-size:.76rem; }
+.photo-lab:fullscreen { width:100vw; height:100vh; max-width:none; margin:0; padding:10px; border:0; border-radius:0; overflow:hidden; background:#101010; }
+.photo-lab:fullscreen .photo-lab-head { margin-bottom:8px; }
+.photo-lab:fullscreen .photo-lab-head p { display:none; }
+.photo-lab:fullscreen .photo-lab-workspace { margin-top:8px; grid-template-columns:minmax(0,1fr) clamp(320px,27vw,430px); }
+.photo-lab:fullscreen .photo-lab-preview { height:calc(100vh - 155px); min-height:0; }
+.photo-lab:fullscreen .photo-lab-sidebar { max-height:calc(100vh - 82px); }
 .photo-lab-select { width:100%; padding:10px; background:#171717; color:var(--text); border:1px solid rgba(212,175,55,.28); border-radius:8px; }
 .photo-lab-crop-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px; }
 .photo-lab-crop-help { color:var(--text-dim); font-size:.78rem; line-height:1.55; margin-top:12px; }
@@ -404,7 +427,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .dashboard-sync-message { font-family:'Playfair Display',serif; color:var(--gold); font-size:1.22rem; margin-bottom:5px; }
 .dashboard-updated { color:var(--text-dim); font-size:.8rem; }
 @media (max-width:900px) { .analytics-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .analytics-grid { grid-template-columns:1fr; } }
-@media (max-width:760px) { .photo-lab-controls { grid-template-columns:1fr; } .photo-lab-preview { height:clamp(220px,52vh,460px); } }
+@media (max-width:960px) { .photo-lab-workspace { grid-template-columns:1fr; } .photo-lab-canvas-column { position:static; } .photo-lab-sidebar { max-height:none; overflow:visible; } .photo-lab-preview { height:clamp(260px,56vh,620px); min-height:0; } }
+@media (max-width:760px) { .photo-lab-controls { grid-template-columns:1fr; } .photo-lab-preview { height:clamp(220px,52vh,460px); } .photo-lab-fullscreen { display:none; } }
 @media (max-width:900px) { .dashboard-health { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .analytics-fields { grid-template-columns:1fr; } .analytics-card-value { font-size:1.55rem; } .analytics-panel { padding:15px; } }
 @media (max-width:520px) { .dashboard-health { grid-template-columns:1fr; } }
@@ -458,16 +482,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                     <h2 style="font-family:'Playfair Display',serif;color:var(--gold);margin:0 0 7px;">&#10024; Laboratoire photo</h2>
                     <p style="color:var(--text-dim);margin:0;line-height:1.6;">Développement RAW, réglages automatiques, débruitage, recadrage et export concours directement dans votre navigateur.</p>
                 </div>
-                <span class="photo-lab-badge">Photo traitée localement · aucun envoi</span>
+                <div class="photo-lab-head-actions">
+                    <span class="photo-lab-badge">Photo traitée localement · aucun envoi</span>
+                    <button type="button" class="btn btn-outline photo-lab-fullscreen" id="photoLabFullscreen">⛶ Plein écran</button>
+                </div>
             </div>
 
             <label class="photo-lab-drop" id="photoLabDrop" for="photoLabInput">
                 <strong style="color:var(--gold);display:block;margin-bottom:6px;">Choisir ou déposer une photo</strong>
-                <span style="color:var(--text-dim);font-size:.86rem;">JPEG, PNG, WebP ou RAW · traitement local dans le navigateur</span>
-                <input id="photoLabInput" type="file" accept="image/jpeg,image/png,image/webp,.3fr,.arw,.cr2,.cr3,.dng,.erf,.kdc,.mos,.mrw,.nef,.nrw,.orf,.pef,.raf,.raw,.rw2,.sr2,.srf" hidden>
+                <span style="color:var(--text-dim);font-size:.86rem;">JPEG, PNG, WebP ou RAW compatible LibRaw · Canon, Nikon, Sony, Fujifilm, Olympus, Panasonic, Pentax, Leica, Hasselblad, Phase One…</span>
+                <input id="photoLabInput" type="file" accept="image/jpeg,image/png,image/webp,.3fr,.ari,.arw,.bay,.cap,.cine,.cr2,.cr3,.crw,.dcr,.dng,.erf,.fff,.gpr,.iiq,.kdc,.mdc,.mef,.mos,.mrw,.nef,.nrw,.orf,.pef,.ptx,.raf,.raw,.rw2,.rwl,.sr2,.srf,.srw,.x3f" hidden>
             </label>
 
             <div class="photo-lab-workspace" id="photoLabWorkspace">
+                <div class="photo-lab-canvas-column">
                 <div class="photo-lab-preview" id="photoLabPreview">
                     <div class="photo-lab-preview-stage" id="photoLabPreviewStage">
                         <canvas id="photoLabOriginal" aria-label="Photographie originale"></canvas>
@@ -482,54 +510,75 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                         <span class="photo-lab-horizon-line" id="photoLabHorizonLine" aria-hidden="true"></span>
                     </div>
                 </div>
-                <label for="photoLabCompare" style="display:block;color:var(--text-dim);font-size:.78rem;margin-top:10px;">Comparaison avant / après</label>
+                <div class="photo-lab-compare-help"><label for="photoLabCompare">Avant / après</label><span>Glissez directement sur la photo</span></div>
                 <input class="photo-lab-compare" id="photoLabCompare" type="range" min="0" max="100" value="50">
                 <div class="photo-lab-view-controls">
                     <label for="photoLabZoom">Zoom de l’aperçu</label><output id="photoLabZoomValue">Ajusté à l’écran</output>
                     <input id="photoLabZoom" type="range" min="50" max="200" step="10" value="100">
                 </div>
+                </div>
 
+                <aside class="photo-lab-sidebar" aria-label="Réglages photographiques">
                 <div class="photo-lab-controls">
                     <div class="photo-lab-panel">
-                        <div class="photo-lab-editor-tabs" role="tablist" aria-label="Outils de retouche">
-                            <button type="button" class="photo-lab-editor-tab active" id="photoLabRenderTab" data-lab-tab="render" role="tab" aria-selected="true">Rendu</button>
-                            <button type="button" class="photo-lab-editor-tab" id="photoLabCropTab" data-lab-tab="crop" role="tab" aria-selected="false">Recadrage</button>
+                        <div id="photoLabRenderPanel">
+                        <details class="photo-lab-section" open>
+                            <summary>Préréglages</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-presets" role="group" aria-label="Réglage photographique">
+                                    <button type="button" class="photo-lab-preset active" data-photo-preset="natural">Auto naturel</button>
+                                    <button type="button" class="photo-lab-preset" data-photo-preset="dynamic">Auto dynamique</button>
+                                    <button type="button" class="photo-lab-preset" data-photo-preset="silhouette">Auto silhouette</button>
+                                    <button type="button" class="photo-lab-preset" data-photo-preset="bw">Noir &amp; blanc</button>
+                                    <button type="button" class="photo-lab-preset" data-photo-preset="bw-contrast">N&amp;B contrasté</button>
+                                    <button type="button" class="photo-lab-preset" data-photo-preset="none">Original</button>
+                                </div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section" open>
+                            <summary>Lumière</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row">
+                                    <label for="photoLabAutoStrength">Force du réglage auto</label><output id="photoLabAutoStrengthValue">100 %</output>
+                                    <input id="photoLabAutoStrength" type="range" min="0" max="100" step="1" value="100">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabHighlights">Hautes lumières</label><output id="photoLabHighlightsValue">0</output>
+                                    <input id="photoLabHighlights" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabShadows">Ombres</label><output id="photoLabShadowsValue">0</output>
+                                    <input id="photoLabShadows" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section">
+                            <summary>Couleur et atmosphère</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row">
+                                    <label for="photoLabDehaze">Correction du voile</label><output id="photoLabDehazeValue">0</output>
+                                    <input id="photoLabDehaze" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabSaturation">Saturation</label><output id="photoLabSaturationValue">0</output>
+                                    <input id="photoLabSaturation" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section" open>
+                            <summary>Détails et bruit</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row">
+                                    <label for="photoLabDenoise">Débruitage préservant les détails</label><output id="photoLabDenoiseValue">Léger</output>
+                                    <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="1">
+                                </div>
+                                <p class="photo-lab-section-note">Le bruit coloré est atténué plus fortement que la texture et les contours. Commencez par « Léger ».</p>
+                            </div>
+                        </details>
                         </div>
-                        <div class="photo-lab-tab-content active" id="photoLabRenderPanel" role="tabpanel" aria-labelledby="photoLabRenderTab">
-                        <div class="photo-lab-presets" role="group" aria-label="Réglage photographique">
-                            <button type="button" class="photo-lab-preset active" data-photo-preset="natural">Auto naturel</button>
-                            <button type="button" class="photo-lab-preset" data-photo-preset="dynamic">Auto dynamique</button>
-                            <button type="button" class="photo-lab-preset" data-photo-preset="silhouette">Auto silhouette</button>
-                            <button type="button" class="photo-lab-preset" data-photo-preset="bw">Noir &amp; blanc</button>
-                            <button type="button" class="photo-lab-preset" data-photo-preset="bw-contrast">N&amp;B contrasté</button>
-                            <button type="button" class="photo-lab-preset" data-photo-preset="none">Original</button>
-                        </div>
-                        <div class="photo-lab-row">
-                            <label for="photoLabDenoise">Débruitage</label><output id="photoLabDenoiseValue">Moyen</output>
-                            <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="2">
-                        </div>
-                        <div class="photo-lab-row">
-                            <label for="photoLabAutoStrength">Force du réglage auto</label><output id="photoLabAutoStrengthValue">100 %</output>
-                            <input id="photoLabAutoStrength" type="range" min="0" max="100" step="1" value="100">
-                        </div>
-                        <div class="photo-lab-row">
-                            <label for="photoLabDehaze">Dévoilage</label><output id="photoLabDehazeValue">0</output>
-                            <input id="photoLabDehaze" type="range" min="-100" max="100" step="1" value="0">
-                        </div>
-                        <div class="photo-lab-row">
-                            <label for="photoLabSaturation">Saturation</label><output id="photoLabSaturationValue">0</output>
-                            <input id="photoLabSaturation" type="range" min="-100" max="100" step="1" value="0">
-                        </div>
-                        <div class="photo-lab-row">
-                            <label for="photoLabHighlights">Hautes lumières</label><output id="photoLabHighlightsValue">0</output>
-                            <input id="photoLabHighlights" type="range" min="-100" max="100" step="1" value="0">
-                        </div>
-                        <div class="photo-lab-row">
-                            <label for="photoLabShadows">Ombres</label><output id="photoLabShadowsValue">0</output>
-                            <input id="photoLabShadows" type="range" min="-100" max="100" step="1" value="0">
-                        </div>
-                        </div>
-                        <div class="photo-lab-tab-content" id="photoLabCropPanel" role="tabpanel" aria-labelledby="photoLabCropTab">
+                        <details class="photo-lab-section" id="photoLabCropSection">
+                            <summary>Recadrage et redressement</summary>
+                            <div class="photo-lab-section-body" id="photoLabCropPanel">
                             <label for="photoLabCropRatio" style="display:block;color:var(--gold);font-size:.8rem;margin-bottom:6px;">Format de recadrage</label>
                             <select class="photo-lab-select" id="photoLabCropRatio">
                                 <option value="free">Libre</option>
@@ -548,30 +597,34 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 <button type="button" class="btn btn-outline" id="photoLabCropReset">Réinitialiser</button>
                             </div>
                             <p class="photo-lab-crop-help" id="photoLabCropHelp">Déplacez le cadre ou ses poignées. La grille apparaît pendant le redressement. Pour l’horizon, tracez une ligne le long d’un repère qui devrait être horizontal.</p>
-                        </div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section" open>
+                            <summary>Export</summary>
+                            <div class="photo-lab-section-body">
+                                <label for="photoLabFormat" style="display:block;color:var(--text-dim);font-size:.78rem;margin-bottom:5px;">Format</label>
+                                <select id="photoLabFormat" class="photo-lab-select">
+                                    <option value="image/jpeg">JPEG haute qualité</option>
+                                    <option value="image/webp">WebP léger</option>
+                                    <option value="image/png">PNG sans perte</option>
+                                </select>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabQuality">Qualité</label><output id="photoLabQualityValue">92 %</output>
+                                    <input id="photoLabQuality" type="range" min="70" max="100" step="1" value="92">
+                                </div>
+                                <p class="photo-lab-export-note"><strong style="color:var(--gold);">Concours :</strong> JPEG, bord long ≤ 1920 px et fichier ≤ 2,7 Mo. <strong style="color:var(--gold);">Pleine taille :</strong> dimensions maximales après recadrage.</p>
+                                <div class="photo-lab-actions">
+                                    <button type="button" class="btn btn-gold" id="photoLabDownloadCompetition">Exporter concours · 1920 px / 2,7 Mo</button>
+                                    <button type="button" class="btn btn-outline" id="photoLabDownloadFull">Exporter pleine taille</button>
+                                    <button type="button" class="btn btn-outline" id="photoLabClear">Choisir une autre photo</button>
+                                </div>
+                            </div>
+                        </details>
                     </div>
-                    <div class="photo-lab-panel">
-                        <strong style="color:var(--gold);display:block;margin-bottom:12px;">Export</strong>
-                        <label for="photoLabFormat" style="display:block;color:var(--text-dim);font-size:.78rem;margin-bottom:5px;">Format</label>
-                        <select id="photoLabFormat" style="width:100%;padding:10px;background:#171717;color:var(--text);border:1px solid rgba(212,175,55,.28);border-radius:8px;">
-                            <option value="image/jpeg">JPEG haute qualité</option>
-                            <option value="image/webp">WebP léger</option>
-                            <option value="image/png">PNG sans perte</option>
-                        </select>
-                        <div class="photo-lab-row">
-                            <label for="photoLabQuality">Qualité</label><output id="photoLabQualityValue">92 %</output>
-                            <input id="photoLabQuality" type="range" min="70" max="100" step="1" value="92">
-                        </div>
-                        <p class="photo-lab-export-note"><strong style="color:var(--gold);">Concours :</strong> JPEG, bord long ≤ 1920 px et fichier ≤ 2,7 Mo. <strong style="color:var(--gold);">Pleine taille :</strong> dimensions maximales après recadrage.</p>
-                    </div>
-                </div>
-                <div class="photo-lab-actions">
-                    <button type="button" class="btn btn-gold" id="photoLabDownloadCompetition">Exporter concours · 1920 px / 2,7 Mo</button>
-                    <button type="button" class="btn btn-outline" id="photoLabDownloadFull">Exporter pleine taille</button>
-                    <button type="button" class="btn btn-outline" id="photoLabClear">Choisir une autre photo</button>
                 </div>
                 <div class="photo-lab-status" id="photoLabStatus" role="status" aria-live="polite">Aperçu prêt.</div>
                 <div class="photo-lab-progress" id="photoLabProgress"><span></span></div>
+                </aside>
             </div>
         </section>
 

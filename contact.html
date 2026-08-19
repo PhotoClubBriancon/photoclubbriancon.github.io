@@ -342,17 +342,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .analytics-empty { color:var(--text-dim); text-align:center; padding:55px 12px; }
 .photo-lab { max-width:1000px; margin:0 auto 32px; padding:clamp(18px,3vw,30px); background:linear-gradient(145deg,#1b1a18,#111); border:1px solid rgba(212,175,55,.22); border-radius:18px; }
 .photo-lab-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; flex-wrap:wrap; margin-bottom:20px; }
+.photo-lab-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; flex-wrap:wrap; }
 .photo-lab-badge { color:#79d9b4; background:rgba(30,169,124,.12); border:1px solid rgba(30,169,124,.32); border-radius:999px; padding:7px 12px; font-size:.76rem; white-space:nowrap; }
 .photo-lab-drop { display:block; border:1px dashed rgba(212,175,55,.5); border-radius:14px; padding:24px; text-align:center; cursor:pointer; background:rgba(212,175,55,.04); transition:.2s; }
 .photo-lab-drop:hover,.photo-lab-drop.dragover { border-color:var(--gold); background:rgba(212,175,55,.1); }
 .photo-lab-workspace { display:none; margin-top:22px; }
+.photo-lab-canvas-column,.photo-lab-sidebar { min-width:0; }
 .photo-lab-preview { position:relative; width:100%; height:clamp(240px,55vw,620px); overflow:auto; overscroll-behavior:contain; border-radius:14px; background:#080808; scrollbar-color:var(--gold) #191919; }
 .photo-lab-preview-stage { position:relative; width:100%; height:100%; min-width:100%; min-height:100%; display:grid; place-items:center; transition:width .18s ease,height .18s ease; }
 .photo-lab-preview canvas { display:block; max-width:100%; max-height:100%; width:auto; height:auto; grid-area:1/1; }
 .photo-lab-preview .processed { clip-path:inset(0 0 0 50%); }
-.photo-lab-divider { position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.5); pointer-events:none; }
+.photo-lab-divider { position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.5); pointer-events:none; z-index:3; }
 .photo-lab-divider::before { content:'↔'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:#17120a; font-weight:800; }
 .photo-lab-compare { width:100%; accent-color:var(--gold); margin:14px 0 4px; }
+.photo-lab-compare-help { display:flex; justify-content:space-between; gap:12px; color:var(--text-dim); font-size:.76rem; margin-top:10px; }
 .photo-lab-view-controls { display:grid; grid-template-columns:1fr auto; gap:10px 16px; align-items:center; margin-top:12px; }
 .photo-lab-view-controls label { color:var(--text-dim); font-size:.78rem; }
 .photo-lab-view-controls output { color:var(--gold); font-size:.82rem; font-weight:700; }
@@ -383,7 +386,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .dashboard-sync-message { font-family:'Playfair Display',serif; color:var(--gold); font-size:1.22rem; margin-bottom:5px; }
 .dashboard-updated { color:var(--text-dim); font-size:.8rem; }
 @media (max-width:900px) { .analytics-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .analytics-grid { grid-template-columns:1fr; } }
-@media (max-width:760px) { .photo-lab-controls { grid-template-columns:1fr; } .photo-lab-preview { height:clamp(220px,52vh,460px); } }
+@media (max-width:960px) { .photo-lab-workspace { grid-template-columns:1fr; } .photo-lab-canvas-column { position:static; } .photo-lab-sidebar { max-height:none; overflow:visible; } .photo-lab-preview { height:clamp(260px,56vh,620px); min-height:0; } }
+@media (max-width:760px) { .photo-lab-controls { grid-template-columns:1fr; } .photo-lab-preview { height:clamp(220px,52vh,460px); } .photo-lab-fullscreen { display:none; } }
 @media (max-width:900px) { .dashboard-health { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .analytics-fields { grid-template-columns:1fr; } .analytics-card-value { font-size:1.55rem; } .analytics-panel { padding:15px; } }
 @media (max-width:520px) { .dashboard-health { grid-template-columns:1fr; } }
