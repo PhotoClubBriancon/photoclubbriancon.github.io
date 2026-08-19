@@ -12,9 +12,11 @@
     const previewStage = byId('photoLabPreviewStage');
     const originalCanvas = byId('photoLabOriginal');
     const processedCanvas = byId('photoLabProcessed');
+    const retouchCanvas = byId('photoLabRetouchMask');
     const compare = byId('photoLabCompare');
     const divider = byId('photoLabDivider');
     const fullscreenButton = byId('photoLabFullscreen');
+    const advancedToggle = byId('photoLabAdvancedToggle');
     const cropOverlay = byId('photoLabCropOverlay');
     const horizonLine = byId('photoLabHorizonLine');
     const denoise = byId('photoLabDenoise');
@@ -29,6 +31,34 @@
     const highlightsValue = byId('photoLabHighlightsValue');
     const shadows = byId('photoLabShadows');
     const shadowsValue = byId('photoLabShadowsValue');
+    const exposure = byId('photoLabExposure');
+    const exposureValue = byId('photoLabExposureValue');
+    const contrast = byId('photoLabContrast');
+    const contrastValue = byId('photoLabContrastValue');
+    const whites = byId('photoLabWhites');
+    const whitesValue = byId('photoLabWhitesValue');
+    const blacks = byId('photoLabBlacks');
+    const blacksValue = byId('photoLabBlacksValue');
+    const temperature = byId('photoLabTemperature');
+    const temperatureValue = byId('photoLabTemperatureValue');
+    const tint = byId('photoLabTint');
+    const tintValue = byId('photoLabTintValue');
+    const vibrance = byId('photoLabVibrance');
+    const vibranceValue = byId('photoLabVibranceValue');
+    const toneCurve = byId('photoLabToneCurve');
+    const curvePath = byId('photoLabCurvePath');
+    const clarity = byId('photoLabClarity');
+    const clarityValue = byId('photoLabClarityValue');
+    const sharpening = byId('photoLabSharpening');
+    const sharpeningValue = byId('photoLabSharpeningValue');
+    const resetAdvanced = byId('photoLabResetAdvanced');
+    const healRadius = byId('photoLabHealRadius');
+    const healRadiusValue = byId('photoLabHealRadiusValue');
+    const healToggle = byId('photoLabHealToggle');
+    const healUndo = byId('photoLabHealUndo');
+    const healClear = byId('photoLabHealClear');
+    const dustDetect = byId('photoLabDustDetect');
+    const retouchCount = byId('photoLabRetouchCount');
     const zoom = byId('photoLabZoom');
     const zoomValue = byId('photoLabZoomValue');
     const cropRatio = byId('photoLabCropRatio');
@@ -61,6 +91,8 @@
     let requestSequence = 0;
     let previewGeneration = 0;
     let previewTimer = 0;
+    let previewRunning = false;
+    let previewRequested = false;
     let geometryTimer = 0;
     let gridTimer = 0;
     let cropEditing = false;
@@ -70,6 +102,9 @@
     let horizonMode = false;
     let horizonStart = null;
     let compareDragging = false;
+    let retouchMode = false;
+    let retouchActions = [];
+    let activeRetouchAction = null;
 
     const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 
@@ -93,6 +128,7 @@
         }
         pending.delete(message.id);
         if (message.error) task.reject(new Error(message.error));
+        else if (Array.isArray(message.spots)) task.resolve({spots: message.spots});
         else task.resolve(new ImageData(new Uint8ClampedArray(message.buffer), message.width, message.height));
     };
 
@@ -110,20 +146,132 @@
             saturation: Number(saturation.value),
             highlights: Number(highlights.value),
             shadows: Number(shadows.value),
+            exposure: Number(exposure.value),
+            contrast: Number(contrast.value),
+            whites: Number(whites.value),
+            blacks: Number(blacks.value),
+            temperature: Number(temperature.value),
+            tint: Number(tint.value),
+            vibrance: Number(vibrance.value),
+            toneCurve: toneCurve.value,
+            clarity: Number(clarity.value),
+            sharpening: Number(sharpening.value),
         };
+    }
+
+    function retouchPoints() {
+        return retouchActions.flat();
+    }
+
+    function buildRetouchMask(width, height) {
+        const points = retouchPoints();
+        if (!points.length) return null;
+        const mask = new Uint8Array(width * height);
+        const shortEdge = Math.min(width, height);
+        for (const point of points) {
+            const centerX = Math.round(point.x * (width - 1));
+            const centerY = Math.round(point.y * (height - 1));
+            const radius = Math.max(1, Math.round(point.radius * shortEdge));
+            const radiusSquared = radius * radius;
+            const startX = Math.max(0, centerX - radius), endX = Math.min(width - 1, centerX + radius);
+            const startY = Math.max(0, centerY - radius), endY = Math.min(height - 1, centerY + radius);
+            for (let y = startY; y <= endY; y++) {
+                const dy = y - centerY;
+                for (let x = startX; x <= endX; x++) {
+                    const dx = x - centerX;
+                    if (dx * dx + dy * dy <= radiusSquared) mask[y * width + x] = 1;
+                }
+            }
+        }
+        return mask;
+    }
+
+    function renderRetouchOverlay() {
+        if (retouchCanvas.width !== originalCanvas.width || retouchCanvas.height !== originalCanvas.height) {
+            retouchCanvas.width = originalCanvas.width;
+            retouchCanvas.height = originalCanvas.height;
+        }
+        const context = retouchCanvas.getContext('2d');
+        context.clearRect(0, 0, retouchCanvas.width, retouchCanvas.height);
+        const shortEdge = Math.min(retouchCanvas.width, retouchCanvas.height);
+        context.fillStyle = 'rgba(255,92,82,.24)';
+        context.strokeStyle = 'rgba(255,145,118,.92)';
+        context.lineWidth = Math.max(1, shortEdge / 450);
+        for (const point of retouchPoints()) {
+            context.beginPath();
+            context.arc(point.x * retouchCanvas.width, point.y * retouchCanvas.height, point.radius * shortEdge, 0, Math.PI * 2);
+            context.fill();
+            context.stroke();
+        }
+    }
+
+    function updateRetouchUi() {
+        const count = retouchActions.length;
+        healUndo.disabled = count === 0;
+        healClear.disabled = count === 0;
+        retouchCount.textContent = count === 0 ? 'Aucune correction locale' : `${count} correction${count > 1 ? 's' : ''} locale${count > 1 ? 's' : ''}`;
+        renderRetouchOverlay();
+    }
+
+    function clearRetouches(message = false) {
+        if (!retouchActions.length) return;
+        retouchActions = [];
+        activeRetouchAction = null;
+        updateRetouchUi();
+        schedulePreview();
+        if (message) setStatus('Corrections locales réinitialisées après le changement de cadrage.');
+    }
+
+    function setRetouchMode(enabled) {
+        retouchMode = enabled;
+        retouchCanvas.classList.toggle('active', enabled);
+        healToggle.setAttribute('aria-pressed', String(enabled));
+        healToggle.classList.toggle('btn-gold', enabled);
+        healToggle.classList.toggle('btn-outline', !enabled);
+        healToggle.textContent = enabled ? 'Pinceau actif · peignez sur la photo' : 'Activer le pinceau correcteur';
+    }
+
+    function retouchPointFromPointer(event) {
+        const rect = retouchCanvas.getBoundingClientRect();
+        return {
+            x: clamp((event.clientX - rect.left) / Math.max(1, rect.width), 0, 1),
+            y: clamp((event.clientY - rect.top) / Math.max(1, rect.height), 0, 1),
+            radius: Number(healRadius.value) / Math.max(1, Math.min(rect.width, rect.height)),
+        };
+    }
+
+    function appendRetouchPoint(event) {
+        if (!activeRetouchAction) return;
+        const point = retouchPointFromPointer(event);
+        const previous = activeRetouchAction.at(-1);
+        if (previous && Math.hypot(point.x - previous.x, point.y - previous.y) < point.radius * 0.32) return;
+        activeRetouchAction.push(point);
+        renderRetouchOverlay();
     }
 
     function processImageData(imageData, onProgress) {
         const id = ++requestSequence;
         return new Promise((resolve, reject) => {
             pending.set(id, {resolve, reject, onProgress});
+            const retouchMask = buildRetouchMask(imageData.width, imageData.height);
+            const transferables = [imageData.data.buffer];
+            if (retouchMask) transferables.push(retouchMask.buffer);
             worker.postMessage({
                 id,
                 width: imageData.width,
                 height: imageData.height,
                 buffer: imageData.data.buffer,
+                maskBuffer: retouchMask?.buffer || null,
                 settings: currentSettings(),
-            }, [imageData.data.buffer]);
+            }, transferables);
+        });
+    }
+
+    function requestDustDetection(imageData) {
+        const id = ++requestSequence;
+        return new Promise((resolve, reject) => {
+            pending.set(id, {resolve, reject});
+            worker.postMessage({id, action: 'detectDust', width: imageData.width, height: imageData.height, buffer: imageData.data.buffer}, [imageData.data.buffer]);
         });
     }
 
@@ -165,6 +313,11 @@
 
     async function updatePreview() {
         if (!sourceBitmap) return;
+        if (previewRunning) {
+            previewRequested = true;
+            return;
+        }
+        previewRunning = true;
         const generation = ++previewGeneration;
         setStatus('Calcul de l’aperçu…');
         setProgress(8);
@@ -177,26 +330,34 @@
             processedCanvas.height = result.height;
             processedCanvas.getContext('2d', {alpha: false}).putImageData(result, 0, 0);
             updateCropOverlay();
+            renderRetouchOverlay();
             setProgress(100);
             window.setTimeout(() => setProgress(0, false), 300);
             setStatus(`Aperçu prêt · source ${sourceBitmap.width} × ${sourceBitmap.height} px`);
         } catch (error) {
             setProgress(0, false);
             setStatus(error.message || 'Aperçu impossible.', true);
+        } finally {
+            previewRunning = false;
+            if (previewRequested) {
+                previewRequested = false;
+                window.setTimeout(updatePreview, 16);
+            }
         }
     }
 
     function drawPreviewSource() {
-        renderBitmap(originalCanvas, 1400, !cropEditing);
+        renderBitmap(originalCanvas, 1100, !cropEditing);
         processedCanvas.width = originalCanvas.width;
         processedCanvas.height = originalCanvas.height;
         processedCanvas.getContext('2d', {alpha: false}).drawImage(originalCanvas, 0, 0);
+        renderRetouchOverlay();
         updateCropOverlay();
     }
 
     function schedulePreview() {
         window.clearTimeout(previewTimer);
-        previewTimer = window.setTimeout(updatePreview, 140);
+        previewTimer = window.setTimeout(updatePreview, 36);
     }
 
     function scheduleGeometryPreview() {
@@ -274,6 +435,10 @@
             sourceBitmap = raw ? await decodeRaw(file) : await createImageBitmap(file, {imageOrientation: 'from-image'});
             if (sourceBitmap.width * sourceBitmap.height > 60000000) throw new Error('La photographie dépasse la limite de 60 mégapixels.');
             sourceFile = file;
+            retouchActions = [];
+            activeRetouchAction = null;
+            setRetouchMode(false);
+            updateRetouchUi();
             crop = {x: 0, y: 0, width: 1, height: 1};
             rotationDegrees = 0;
             rotation.value = '0';
@@ -390,6 +555,30 @@
         return number > 0 ? `+${number}` : String(number);
     }
 
+    const curvePaths = {
+        linear: 'M8 80 L92 8',
+        'soft-s': 'M8 80 C28 78 33 58 50 44 C67 30 72 10 92 8',
+        'strong-s': 'M8 80 C33 82 34 58 50 44 C66 30 67 6 92 8',
+        matte: 'M8 70 C26 67 35 55 50 44 C67 30 78 14 92 8',
+    };
+
+    function updateCurvePreview() {
+        curvePath.setAttribute('d', curvePaths[toneCurve.value] || curvePaths.linear);
+    }
+
+    function updateAdvancedOutputs() {
+        exposureValue.value = `${Number(exposure.value).toFixed(1).replace('.', ',')} IL`;
+        contrastValue.value = signedValue(contrast.value);
+        whitesValue.value = signedValue(whites.value);
+        blacksValue.value = signedValue(blacks.value);
+        temperatureValue.value = signedValue(temperature.value);
+        tintValue.value = signedValue(tint.value);
+        vibranceValue.value = signedValue(vibrance.value);
+        clarityValue.value = signedValue(clarity.value);
+        sharpeningValue.value = sharpening.value;
+        updateCurvePreview();
+    }
+
     function updateZoom() {
         const scale = Number(zoom.value) / 100;
         previewStage.style.width = `${scale * 100}%`;
@@ -451,6 +640,7 @@
 
     function setCropEditing(enabled) {
         cropEditing = enabled;
+        if (enabled) setRetouchMode(false);
         preview.classList.toggle('crop-mode', enabled);
         exitHorizonMode();
         if (sourceBitmap) scheduleGeometryPreview();
@@ -471,6 +661,10 @@
         sourceBitmap = null;
         sourceFile = null;
         input.value = '';
+        retouchActions = [];
+        activeRetouchAction = null;
+        setRetouchMode(false);
+        updateRetouchUi();
         workspace.style.display = 'none';
         drop.style.display = 'block';
         cropOverlay.classList.remove('active');
@@ -498,7 +692,7 @@
 
     compare.addEventListener('input', updateComparison);
     preview.addEventListener('pointerdown', event => {
-        if (!sourceBitmap || horizonMode || cropEditing || event.button !== 0) return;
+        if (!sourceBitmap || horizonMode || cropEditing || retouchMode || event.button !== 0) return;
         const rect = originalCanvas.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
         event.preventDefault();
@@ -522,10 +716,95 @@
     saturation.addEventListener('input', () => { saturationValue.value = signedValue(saturation.value); schedulePreview(); });
     highlights.addEventListener('input', () => { highlightsValue.value = signedValue(highlights.value); schedulePreview(); });
     shadows.addEventListener('input', () => { shadowsValue.value = signedValue(shadows.value); schedulePreview(); });
+    exposure.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    contrast.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    whites.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    blacks.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    temperature.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    tint.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    vibrance.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    clarity.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    sharpening.addEventListener('input', () => { updateAdvancedOutputs(); schedulePreview(); });
+    toneCurve.addEventListener('change', () => { updateCurvePreview(); schedulePreview(); });
     zoom.addEventListener('input', updateZoom);
     preview.addEventListener('dblclick', () => { if (!horizonMode) { zoom.value = '100'; updateZoom(); } });
     quality.addEventListener('input', () => { qualityValue.value = `${quality.value} %`; });
     format.addEventListener('change', () => { quality.disabled = format.value === 'image/png'; });
+
+    advancedToggle.addEventListener('click', () => {
+        const enabled = !root.classList.contains('advanced-mode');
+        if (!enabled) setRetouchMode(false);
+        root.classList.toggle('advanced-mode', enabled);
+        advancedToggle.setAttribute('aria-pressed', String(enabled));
+        advancedToggle.textContent = enabled ? 'Mode simple' : 'Réglages avancés';
+    });
+
+    resetAdvanced.addEventListener('click', () => {
+        for (const control of [exposure, contrast, whites, blacks, temperature, tint, vibrance, clarity, sharpening]) control.value = '0';
+        toneCurve.value = 'linear';
+        updateAdvancedOutputs();
+        schedulePreview();
+    });
+
+    healRadius.addEventListener('input', () => { healRadiusValue.value = `${healRadius.value} px`; });
+    healToggle.addEventListener('click', () => setRetouchMode(!retouchMode));
+    healUndo.addEventListener('click', () => {
+        retouchActions.pop();
+        updateRetouchUi();
+        schedulePreview();
+    });
+    healClear.addEventListener('click', () => clearRetouches());
+
+    retouchCanvas.addEventListener('pointerdown', event => {
+        if (!retouchMode || !sourceBitmap || event.button !== 0) return;
+        event.preventDefault();
+        activeRetouchAction = [];
+        retouchActions.push(activeRetouchAction);
+        retouchCanvas.setPointerCapture?.(event.pointerId);
+        appendRetouchPoint(event);
+        updateRetouchUi();
+    });
+    retouchCanvas.addEventListener('pointermove', event => {
+        if (!activeRetouchAction) return;
+        event.preventDefault();
+        appendRetouchPoint(event);
+    });
+    const finishRetouchStroke = event => {
+        if (!activeRetouchAction) return;
+        activeRetouchAction = null;
+        retouchCanvas.releasePointerCapture?.(event.pointerId);
+        updateRetouchUi();
+        schedulePreview();
+    };
+    retouchCanvas.addEventListener('pointerup', finishRetouchStroke);
+    retouchCanvas.addEventListener('pointercancel', finishRetouchStroke);
+
+    dustDetect.addEventListener('click', async () => {
+        if (!sourceBitmap) {
+            setStatus('Choisissez d’abord une photographie.', true);
+            return;
+        }
+        dustDetect.disabled = true;
+        setStatus('Recherche des poussières visibles…');
+        setProgress(18);
+        try {
+            const context = processedCanvas.getContext('2d', {alpha: false, willReadFrequently: true});
+            const result = await requestDustDetection(context.getImageData(0, 0, processedCanvas.width, processedCanvas.height));
+            if (!result.spots.length) {
+                setStatus('Aucune poussière évidente détectée. Vous pouvez utiliser le pinceau correcteur.');
+                return;
+            }
+            retouchActions.push(result.spots.map(spot => ({x: spot.x, y: spot.y, radius: spot.radius})));
+            updateRetouchUi();
+            schedulePreview();
+            setStatus(`${result.spots.length} poussière${result.spots.length > 1 ? 's' : ''} potentielle${result.spots.length > 1 ? 's' : ''} corrigée${result.spots.length > 1 ? 's' : ''}. Vérifiez le résultat.`);
+        } catch (error) {
+            setStatus(error.message || 'Détection des poussières impossible.', true);
+        } finally {
+            dustDetect.disabled = false;
+            setProgress(0, false);
+        }
+    });
 
     root.querySelectorAll('[data-photo-preset]').forEach(button => button.addEventListener('click', () => {
         preset = button.dataset.photoPreset;
@@ -539,12 +818,14 @@
 
     cropSection.addEventListener('toggle', () => setCropEditing(cropSection.open));
     cropRatio.addEventListener('change', () => {
+        clearRetouches(true);
         const ratio = fixedRatio();
         if (ratio) centeredCropForRatio(ratio);
         updateCropOverlay();
         showGrid();
     });
     rotation.addEventListener('input', () => {
+        clearRetouches(true);
         rotationDegrees = Number(rotation.value);
         rotationValue.value = `${rotationDegrees.toFixed(1).replace('.', ',')}°`;
         const ratio = fixedRatio();
@@ -565,6 +846,7 @@
     cropOverlay.addEventListener('pointerdown', event => {
         if (horizonMode) return;
         event.preventDefault();
+        clearRetouches(true);
         cropOverlay.setPointerCapture?.(event.pointerId);
         cropDrag = {
             handle: event.target.dataset.handle || 'move',
@@ -606,6 +888,7 @@
 
     horizonButton.addEventListener('click', () => {
         horizonMode = !horizonMode;
+        if (horizonMode) setRetouchMode(false);
         preview.classList.toggle('horizon-mode', horizonMode);
         horizonButton.classList.toggle('btn-gold', horizonMode);
         horizonButton.classList.toggle('btn-outline', !horizonMode);
@@ -637,6 +920,7 @@
         const dx = event.clientX - horizonStart.x;
         const dy = event.clientY - horizonStart.y;
         if (Math.hypot(dx, dy) >= 20) {
+            clearRetouches(true);
             const lineAngle = Math.atan2(dy, dx) * 180 / Math.PI;
             rotationDegrees = clamp(rotationDegrees - lineAngle, -15, 15);
             rotation.value = rotationDegrees.toFixed(1);

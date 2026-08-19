@@ -354,6 +354,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-preview-stage { position:relative; width:100%; height:100%; min-width:100%; min-height:100%; display:grid; place-items:center; transition:width .18s ease,height .18s ease; }
 .photo-lab-preview canvas { display:block; max-width:100%; max-height:100%; width:auto; height:auto; grid-area:1/1; }
 .photo-lab-preview .processed { clip-path:inset(0 0 0 50%); }
+.photo-lab-retouch-mask { z-index:5; pointer-events:none; touch-action:none; }
+.photo-lab-retouch-mask.active { pointer-events:auto; cursor:crosshair; }
 .photo-lab-crop-overlay { position:absolute; display:none; border:2px solid var(--gold); box-shadow:0 0 0 9999px rgba(0,0,0,.55); cursor:move; touch-action:none; z-index:4; }
 .photo-lab-crop-overlay.active { display:block; }
 .photo-lab-crop-overlay.show-grid { background-image:linear-gradient(to right,transparent 33.1%,rgba(255,255,255,.65) 33.2%,rgba(255,255,255,.65) 33.7%,transparent 33.8%,transparent 66.1%,rgba(255,255,255,.65) 66.2%,rgba(255,255,255,.65) 66.7%,transparent 66.8%),linear-gradient(to bottom,transparent 33.1%,rgba(255,255,255,.65) 33.2%,rgba(255,255,255,.65) 33.7%,transparent 33.8%,transparent 66.1%,rgba(255,255,255,.65) 66.2%,rgba(255,255,255,.65) 66.7%,transparent 66.8%); }
@@ -393,6 +395,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-section-body { padding:0 15px 16px; }
 .photo-lab-section-note { margin:9px 0 0; color:var(--text-dim); font-size:.74rem; line-height:1.5; }
 .photo-lab-fullscreen { padding:7px 11px; font-size:.76rem; }
+.photo-lab-advanced-toggle { padding:7px 11px; font-size:.76rem; }
+.photo-lab-advanced-toggle[aria-pressed=true] { color:#17120a; background:var(--gold); border-color:var(--gold); font-weight:700; }
+.photo-lab-advanced { display:none; }
+.photo-lab.advanced-mode .photo-lab-advanced { display:block; }
+.photo-lab-curve-preview { margin-top:12px; padding:10px; border:1px solid rgba(212,175,55,.18); border-radius:10px; background:#090909; }
+.photo-lab-curve-preview svg { display:block; width:100%; height:88px; }
+.photo-lab-curve-grid { stroke:rgba(255,255,255,.12); stroke-width:1; }
+.photo-lab-curve-line { fill:none; stroke:var(--gold); stroke-width:3; stroke-linecap:round; }
+.photo-lab-reset-advanced { width:100%; margin-top:13px; }
+.photo-lab-retouch-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:13px; }
+.photo-lab-retouch-actions .wide { grid-column:1/-1; }
+.photo-lab-retouch-count { display:block; margin-top:10px; color:#79d9b4; font-size:.74rem; }
 .photo-lab:fullscreen { width:100vw; height:100vh; max-width:none; margin:0; padding:10px; border:0; border-radius:0; overflow:hidden; background:#101010; }
 .photo-lab:fullscreen .photo-lab-head { margin-bottom:8px; }
 .photo-lab:fullscreen .photo-lab-head p { display:none; }
@@ -484,6 +498,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                 </div>
                 <div class="photo-lab-head-actions">
                     <span class="photo-lab-badge">Photo traitée localement · aucun envoi</span>
+                    <button type="button" class="btn btn-outline photo-lab-advanced-toggle" id="photoLabAdvancedToggle" aria-pressed="false">Réglages avancés</button>
                     <button type="button" class="btn btn-outline photo-lab-fullscreen" id="photoLabFullscreen">⛶ Plein écran</button>
                 </div>
             </div>
@@ -500,6 +515,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                     <div class="photo-lab-preview-stage" id="photoLabPreviewStage">
                         <canvas id="photoLabOriginal" aria-label="Photographie originale"></canvas>
                         <canvas id="photoLabProcessed" class="processed" aria-label="Photographie traitée"></canvas>
+                        <canvas id="photoLabRetouchMask" class="photo-lab-retouch-mask" aria-label="Masque des retouches locales"></canvas>
                         <span class="photo-lab-divider" id="photoLabDivider" aria-hidden="true"></span>
                         <div class="photo-lab-crop-overlay" id="photoLabCropOverlay" aria-label="Zone de recadrage">
                             <span class="photo-lab-crop-handle" data-handle="nw"></span>
@@ -552,6 +568,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 </div>
                             </div>
                         </details>
+                        <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Lumière avancée</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row">
+                                    <label for="photoLabExposure">Exposition</label><output id="photoLabExposureValue">0,0 IL</output>
+                                    <input id="photoLabExposure" type="range" min="-2" max="2" step="0.1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabContrast">Contraste</label><output id="photoLabContrastValue">0</output>
+                                    <input id="photoLabContrast" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabWhites">Blancs</label><output id="photoLabWhitesValue">0</output>
+                                    <input id="photoLabWhites" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabBlacks">Noirs</label><output id="photoLabBlacksValue">0</output>
+                                    <input id="photoLabBlacks" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+                        </details>
                         <details class="photo-lab-section">
                             <summary>Couleur et atmosphère</summary>
                             <div class="photo-lab-section-body">
@@ -565,6 +602,42 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 </div>
                             </div>
                         </details>
+                        <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Balance des couleurs</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row">
+                                    <label for="photoLabTemperature">Température</label><output id="photoLabTemperatureValue">0</output>
+                                    <input id="photoLabTemperature" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabTint">Teinte vert / magenta</label><output id="photoLabTintValue">0</output>
+                                    <input id="photoLabTint" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="photo-lab-row">
+                                    <label for="photoLabVibrance">Vibrance</label><output id="photoLabVibranceValue">0</output>
+                                    <input id="photoLabVibrance" type="range" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Courbe des tonalités</summary>
+                            <div class="photo-lab-section-body">
+                                <label for="photoLabToneCurve" style="display:block;color:var(--text-dim);font-size:.78rem;margin-bottom:6px;">Préréglage de courbe</label>
+                                <select class="photo-lab-select" id="photoLabToneCurve">
+                                    <option value="linear">Linéaire</option>
+                                    <option value="soft-s">Courbe en S douce</option>
+                                    <option value="strong-s">Courbe en S marquée</option>
+                                    <option value="matte">Noirs mats</option>
+                                </select>
+                                <div class="photo-lab-curve-preview" aria-hidden="true">
+                                    <svg viewBox="0 0 100 88" preserveAspectRatio="none">
+                                        <path class="photo-lab-curve-grid" d="M25 0V88M50 0V88M75 0V88M0 22H100M0 44H100M0 66H100"></path>
+                                        <path class="photo-lab-curve-line" id="photoLabCurvePath" d="M8 80 L92 8"></path>
+                                    </svg>
+                                </div>
+                                <button type="button" class="btn btn-outline photo-lab-reset-advanced" id="photoLabResetAdvanced">Réinitialiser les réglages avancés</button>
+                            </div>
+                        </details>
                         <details class="photo-lab-section" open>
                             <summary>Détails et bruit</summary>
                             <div class="photo-lab-section-body">
@@ -573,6 +646,33 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                     <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="1">
                                 </div>
                                 <p class="photo-lab-section-note">Le bruit coloré est atténué plus fortement que la texture et les contours. Commencez par « Léger ».</p>
+                                <div class="photo-lab-advanced">
+                                    <div class="photo-lab-row">
+                                        <label for="photoLabClarity">Microcontraste</label><output id="photoLabClarityValue">0</output>
+                                        <input id="photoLabClarity" type="range" min="-100" max="100" step="1" value="0">
+                                    </div>
+                                    <div class="photo-lab-row">
+                                        <label for="photoLabSharpening">Netteté</label><output id="photoLabSharpeningValue">0</output>
+                                        <input id="photoLabSharpening" type="range" min="0" max="100" step="1" value="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                        <details class="photo-lab-section photo-lab-advanced">
+                            <summary>Effacement et poussières</summary>
+                            <div class="photo-lab-section-body">
+                                <div class="photo-lab-row">
+                                    <label for="photoLabHealRadius">Taille du pinceau</label><output id="photoLabHealRadiusValue">25 px</output>
+                                    <input id="photoLabHealRadius" type="range" min="5" max="80" step="1" value="25">
+                                </div>
+                                <div class="photo-lab-retouch-actions">
+                                    <button type="button" class="btn btn-outline wide" id="photoLabHealToggle" aria-pressed="false">Activer le pinceau correcteur</button>
+                                    <button type="button" class="btn btn-outline" id="photoLabHealUndo" disabled>Annuler</button>
+                                    <button type="button" class="btn btn-outline" id="photoLabHealClear" disabled>Tout effacer</button>
+                                    <button type="button" class="btn btn-outline wide" id="photoLabDustDetect">Détecter les poussières</button>
+                                </div>
+                                <span class="photo-lab-retouch-count" id="photoLabRetouchCount">Aucune correction locale</span>
+                                <p class="photo-lab-section-note">Peignez sur un petit objet : la zone est reconstruite à partir de son contour. La détection des poussières recherche de petites taches sombres dans les surfaces régulières. Vérifiez toujours le résultat avec Avant / Après.</p>
                             </div>
                         </details>
                         </div>
