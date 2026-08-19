@@ -303,6 +303,166 @@ function applySaturation(pixels, saturation) {
     return pixels;
 }
 
+const HSL_CENTERS = {red: 0, orange: 30, yellow: 60, green: 120, aqua: 180, blue: 240, purple: 285, magenta: 330};
+
+function rgbToHsl(red, green, blue) {
+    const maximum = Math.max(red, green, blue), minimum = Math.min(red, green, blue);
+    const lightness = (maximum + minimum) / 2;
+    if (maximum === minimum) return [0, 0, lightness];
+    const difference = maximum - minimum;
+    const saturation = lightness > 0.5 ? difference / (2 - maximum - minimum) : difference / (maximum + minimum);
+    let hue;
+    if (maximum === red) hue = (green - blue) / difference + (green < blue ? 6 : 0);
+    else if (maximum === green) hue = (blue - red) / difference + 2;
+    else hue = (red - green) / difference + 4;
+    return [hue * 60, saturation, lightness];
+}
+
+function hslToRgb(hue, saturation, lightness) {
+    hue = ((hue % 360) + 360) % 360 / 360;
+    if (saturation === 0) return [lightness, lightness, lightness];
+    const q = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation;
+    const p = 2 * lightness - q;
+    const component = offset => {
+        let value = hue + offset;
+        if (value < 0) value += 1; if (value > 1) value -= 1;
+        if (value < 1 / 6) return p + (q - p) * 6 * value;
+        if (value < 1 / 2) return q;
+        if (value < 2 / 3) return p + (q - p) * (2 / 3 - value) * 6;
+        return p;
+    };
+    return [component(1 / 3), component(0), component(-1 / 3)];
+}
+
+function applyHslMixer(pixels, mixer) {
+    const active = Object.entries(mixer || {}).filter(([, values]) => values && (values.hue || values.saturation || values.luminance));
+    if (!active.length) return pixels;
+    for (let index = 0; index < pixels.length; index += 4) {
+        let [hue, saturation, lightness] = rgbToHsl(pixels[index] / 255, pixels[index + 1] / 255, pixels[index + 2] / 255);
+        if (saturation < 0.015) continue;
+        let best = null, bestDistance = Infinity;
+        for (const [channel, values] of active) {
+            const distance = Math.abs(((hue - HSL_CENTERS[channel] + 540) % 360) - 180);
+            if (distance < bestDistance) { bestDistance = distance; best = values; }
+        }
+        if (!best || bestDistance > 42) continue;
+        const weight = 1 - smoothstep(24, 42, bestDistance);
+        hue += (Number(best.hue) || 0) * 0.32 * weight;
+        saturation = clamp(saturation + (Number(best.saturation) || 0) / 100 * weight * (best.saturation >= 0 ? 1 - saturation : saturation), 0, 1);
+        lightness = clamp(lightness + (Number(best.luminance) || 0) / 100 * weight * (best.luminance >= 0 ? 1 - lightness : lightness), 0, 1);
+        const rgb = hslToRgb(hue, saturation, lightness);
+        pixels[index] = rgb[0] * 255; pixels[index + 1] = rgb[1] * 255; pixels[index + 2] = rgb[2] * 255;
+    }
+    return pixels;
+}
+
+function sampleBilinear(source, width, height, x, y, channel) {
+    x = clamp(x, 0, width - 1); y = clamp(y, 0, height - 1);
+    const x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(width - 1, x0 + 1), y1 = Math.min(height - 1, y0 + 1);
+    const tx = x - x0, ty = y - y0;
+    const a = source[(y0 * width + x0) * 4 + channel] * (1 - tx) + source[(y0 * width + x1) * 4 + channel] * tx;
+    const b = source[(y1 * width + x0) * 4 + channel] * (1 - tx) + source[(y1 * width + x1) * 4 + channel] * tx;
+    return a * (1 - ty) + b * ty;
+}
+
+function applyOpticalCorrectionGpu(pixels, width, height, distortion, vignette, chromaticAberration) {
+    if (typeof OffscreenCanvas === 'undefined') return null;
+    const bend = clamp(Number(distortion) || 0, -100, 100) / 100 * 0.34;
+    const vignetteAmount = clamp(Number(vignette) || 0, -100, 100) / 100;
+    const fringe = clamp(Number(chromaticAberration) || 0, -100, 100) / 100 * 0.004;
+    if (bend === 0 && vignetteAmount === 0 && fringe === 0) return null;
+    try {
+        const canvas = new OffscreenCanvas(width, height);
+        const gl = canvas.getContext('webgl2', {alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true});
+        if (!gl || width > gl.getParameter(gl.MAX_TEXTURE_SIZE) || height > gl.getParameter(gl.MAX_TEXTURE_SIZE)) return null;
+        const compile = (type, source) => {
+            const shader = gl.createShader(type); gl.shaderSource(shader, source); gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) || 'Shader invalide');
+            return shader;
+        };
+        const vertex = compile(gl.VERTEX_SHADER, `#version 300 es
+            in vec2 position; in vec2 texCoord; out vec2 uv;
+            void main(){ uv=texCoord; gl_Position=vec4(position,0.0,1.0); }`);
+        const fragment = compile(gl.FRAGMENT_SHADER, `#version 300 es
+            precision highp float; uniform sampler2D image; uniform float bend; uniform float vignette; uniform float fringe;
+            in vec2 uv; out vec4 color;
+            void main(){
+                vec2 centered=uv-0.5; float r2=dot(centered,centered)*4.0;
+                vec2 sampleUv=0.5+centered*(1.0+bend*r2); vec2 direction=normalize(centered+vec2(0.000001)); vec2 offset=direction*fringe;
+                float red=texture(image,clamp(sampleUv+offset,0.0,1.0)).r; float green=texture(image,clamp(sampleUv,0.0,1.0)).g; float blue=texture(image,clamp(sampleUv-offset,0.0,1.0)).b;
+                float gain=clamp(1.0+vignette*r2*0.62,0.35,1.8); color=vec4(vec3(red,green,blue)*gain,1.0);
+            }`);
+        const program = gl.createProgram(); gl.attachShader(program, vertex); gl.attachShader(program, fragment); gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+        gl.useProgram(program);
+        const vertices = new Float32Array([-1,-1,0,0, 1,-1,1,0, -1,1,0,1, 1,1,1,1]);
+        const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+        for (const [name, offset] of [['position', 0], ['texCoord', 8]]) {
+            const location = gl.getAttribLocation(program, name); gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 16, offset);
+        }
+        const texture = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        gl.uniform1i(gl.getUniformLocation(program, 'image'), 0); gl.uniform1f(gl.getUniformLocation(program, 'bend'), bend);
+        gl.uniform1f(gl.getUniformLocation(program, 'vignette'), vignetteAmount); gl.uniform1f(gl.getUniformLocation(program, 'fringe'), fringe);
+        gl.viewport(0, 0, width, height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        const output = new Uint8ClampedArray(pixels.length); gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, output);
+        return output;
+    } catch (_) {
+        return null;
+    }
+}
+
+function applyOpticalCorrectionCpu(pixels, width, height, distortion, vignette, chromaticAberration) {
+    const bend = clamp(Number(distortion) || 0, -100, 100) / 100 * 0.34;
+    const vignetteAmount = clamp(Number(vignette) || 0, -100, 100) / 100;
+    const fringe = clamp(Number(chromaticAberration) || 0, -100, 100) / 100 * Math.min(width, height) * 0.004;
+    if (bend === 0 && vignetteAmount === 0 && fringe === 0) return pixels;
+    const source = new Uint8ClampedArray(pixels), output = new Uint8ClampedArray(pixels.length);
+    const halfWidth = width / 2, halfHeight = height / 2;
+    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+        const nx = (x - halfWidth) / halfWidth, ny = (y - halfHeight) / halfHeight;
+        const radiusSquared = nx * nx + ny * ny;
+        const factor = 1 + bend * radiusSquared;
+        const sampleX = halfWidth + nx * factor * halfWidth, sampleY = halfHeight + ny * factor * halfHeight;
+        const length = Math.max(0.001, Math.hypot(nx, ny));
+        const offsetX = nx / length * fringe, offsetY = ny / length * fringe;
+        const target = (y * width + x) * 4;
+        const gain = clamp(1 + vignetteAmount * radiusSquared * 0.62, 0.35, 1.8);
+        output[target] = sampleBilinear(source, width, height, sampleX + offsetX, sampleY + offsetY, 0) * gain;
+        output[target + 1] = sampleBilinear(source, width, height, sampleX, sampleY, 1) * gain;
+        output[target + 2] = sampleBilinear(source, width, height, sampleX - offsetX, sampleY - offsetY, 2) * gain;
+        output[target + 3] = 255;
+    }
+    return output;
+}
+
+function applyLocalAdjustments(pixels, mask, exposure, saturation) {
+    if (!mask?.some(value => value !== 0)) return pixels;
+    const adjusted = new Uint8ClampedArray(pixels);
+    applyBasicAdjustments(adjusted, exposure, 0, 0, 0);
+    applySaturation(adjusted, saturation);
+    for (let pixel = 0; pixel < mask.length; pixel++) {
+        const amount = mask[pixel] / 255;
+        if (amount === 0) continue;
+        const index = pixel * 4;
+        for (let channel = 0; channel < 3; channel++) pixels[index + channel] += (adjusted[index + channel] - pixels[index + channel]) * amount;
+    }
+    return pixels;
+}
+
+function buildRgbHistogram(pixels) {
+    const result = {red: Array(256).fill(0), green: Array(256).fill(0), blue: Array(256).fill(0), luma: Array(256).fill(0)};
+    const stride = Math.max(1, Math.floor((pixels.length / 4) / 280000));
+    for (let index = 0; index < pixels.length; index += 4 * stride) {
+        const red = pixels[index], green = pixels[index + 1], blue = pixels[index + 2];
+        result.red[red]++; result.green[green]++; result.blue[blue]++;
+        result.luma[Math.round(red * 0.2126 + green * 0.7152 + blue * 0.0722)]++;
+    }
+    return result;
+}
+
 function applyTonalAdjustments(pixels, highlights, shadows) {
     const highlightAmount = clamp(Number(highlights) || 0, -100, 100) / 100;
     const shadowAmount = clamp(Number(shadows) || 0, -100, 100) / 100;
@@ -418,7 +578,7 @@ function detectDustSpots(pixels, width, height) {
 }
 
 self.onmessage = event => {
-    const {id, action, width, height, buffer, maskBuffer, settings} = event.data;
+    const {id, action, width, height, buffer, maskBuffer, localMaskBuffer, settings} = event.data;
     try {
         let pixels = new Uint8ClampedArray(buffer);
         if (action === 'detectDust') {
@@ -439,11 +599,18 @@ self.onmessage = event => {
         pixels = applyDehaze(pixels, settings.dehaze);
         pixels = applyVibrance(pixels, settings.vibrance);
         pixels = applySaturation(pixels, settings.saturation);
+        pixels = applyHslMixer(pixels, settings.hslMixer);
         pixels = applyTonalAdjustments(pixels, settings.highlights, settings.shadows);
         pixels = applyLocalDetail(pixels, width, height, settings.clarity, settings.sharpening);
+        if (localMaskBuffer) pixels = applyLocalAdjustments(pixels, new Uint8Array(localMaskBuffer), settings.localExposure, settings.localSaturation);
         if (maskBuffer) pixels = inpaintMask(pixels, width, height, new Uint8Array(maskBuffer));
+        const opticalRequested = Boolean(Number(settings.lensDistortion) || Number(settings.lensVignette) || Number(settings.chromaticAberration));
+        const gpuPixels = opticalRequested ? applyOpticalCorrectionGpu(pixels, width, height, settings.lensDistortion, settings.lensVignette, settings.chromaticAberration) : null;
+        const accelerator = gpuPixels ? 'webgl2' : 'cpu';
+        pixels = gpuPixels || applyOpticalCorrectionCpu(pixels, width, height, settings.lensDistortion, settings.lensVignette, settings.chromaticAberration);
+        const histogram = buildRgbHistogram(pixels);
         self.postMessage({id, progress: 96});
-        self.postMessage({id, width, height, buffer: pixels.buffer}, [pixels.buffer]);
+        self.postMessage({id, width, height, buffer: pixels.buffer, histogram, accelerator}, [pixels.buffer]);
     } catch (error) {
         self.postMessage({id, error: error instanceof Error ? error.message : 'Traitement impossible'});
     }
