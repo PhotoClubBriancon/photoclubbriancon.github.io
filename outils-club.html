@@ -7,7 +7,7 @@
 <meta name="author" content="Photo Club Briançonnais">
 <meta name="application-name" content="Photo Club Briançonnais">
 <meta name="theme-color" content="#111010">
-<meta name="robots" content="index,follow,max-image-preview:large"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cloud.umami.is; worker-src 'self' blob:; connect-src 'self' https://formsubmit.co https://cloud.umami.is https://gateway.umami.is">
+<meta name="robots" content="index,follow,max-image-preview:large"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:site_name" content="Photo Club Briançonnais">
@@ -34,7 +34,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="/images/generated/responsive/img_69ccb901e42bf-d15e4d0b01-1920.webp" fetchpriority="high"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script defer src="https://cloud.umami.is/script.js" data-website-id="0d230273-4824-4405-bcf9-e560f6021ead" data-domains="photoclubbriancon.github.io"></script>
 <style>
 :root {
   --gold: #c8a96e; --gold-dark: #a8893e;
@@ -509,7 +508,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                     <p style="color:var(--text-dim);margin:0;line-height:1.6;">Développement RAW, réglages automatiques, débruitage, recadrage et export concours directement dans votre navigateur.</p>
                 </div>
                 <div class="photo-lab-head-actions">
-                    <span class="photo-lab-badge">Photo traitée localement · aucun envoi</span>
+                    <span class="photo-lab-badge">100 % local · aucun pixel envoyé</span>
                     <button type="button" class="btn btn-outline photo-lab-advanced-toggle" id="photoLabAdvancedToggle" aria-pressed="false">Réglages avancés</button>
                     <button type="button" class="btn btn-outline photo-lab-fullscreen" id="photoLabFullscreen">⛶ Plein écran</button>
                 </div>
@@ -713,7 +712,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                     <button type="button" class="btn btn-outline wide" id="photoLabDustDetect">Détecter les poussières</button>
                                 </div>
                                 <span class="photo-lab-retouch-count" id="photoLabRetouchCount">Aucune correction locale</span>
-                                <p class="photo-lab-section-note">Peignez sur un petit objet : la zone est reconstruite à partir de son contour. La détection des poussières recherche de petites taches sombres dans les surfaces régulières. Vérifiez toujours le résultat avec Avant / Après.</p>
+                                <p class="photo-lab-section-note">Peignez sur un petit objet : la zone est reconstruite à partir de ses contours et textures voisines, sans génération et sans serveur. La détection des poussières recherche de petites taches sombres dans les surfaces régulières. Vérifiez toujours le résultat avec Avant / Après.</p>
                             </div>
                         </details>
                         <details class="photo-lab-section photo-lab-advanced">

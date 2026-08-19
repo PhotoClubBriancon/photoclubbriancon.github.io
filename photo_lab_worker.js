@@ -491,6 +491,68 @@ function applyTonalAdjustments(pixels, highlights, shadows) {
 function inpaintMask(pixels, width, height, mask) {
     if (!mask?.some(value => value !== 0)) return pixels;
     const state = new Uint8Array(mask);
+    const originalMask = new Uint8Array(mask);
+    const source = new Uint8ClampedArray(pixels);
+    const maskedCount = originalMask.reduce((total, value) => total + (value ? 1 : 0), 0);
+    const maximumSearch = clamp(Math.round(Math.sqrt(maskedCount) * 0.72), 10, 110);
+    const oppositeDirections = [[[1,0],[-1,0]], [[0,1],[0,-1]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+    const knownSample = (x, y, dx, dy) => {
+        for (let distance = 1; distance <= maximumSearch; distance++) {
+            const sampleX = x + dx * distance, sampleY = y + dy * distance;
+            if (sampleX < 0 || sampleX >= width || sampleY < 0 || sampleY >= height) return null;
+            const pixel = sampleY * width + sampleX;
+            if (!originalMask[pixel]) return {pixel, distance, x: sampleX, y: sampleY};
+        }
+        return null;
+    };
+    const colorDistance = (first, second) => {
+        const a = first.pixel * 4, b = second.pixel * 4;
+        const red = source[a] - source[b], green = source[a + 1] - source[b + 1], blue = source[a + 2] - source[b + 2];
+        return red * red * 0.24 + green * green * 0.62 + blue * blue * 0.14;
+    };
+    const localMean = (sample, channel) => {
+        let total = 0, count = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            const x = clamp(sample.x + dx, 0, width - 1), y = clamp(sample.y + dy, 0, height - 1);
+            const pixel = y * width + x;
+            if (originalMask[pixel]) continue;
+            total += source[pixel * 4 + channel]; count++;
+        }
+        return count ? total / count : source[sample.pixel * 4 + channel];
+    };
+
+    // Reconstitue d'abord les lignes et les contours depuis deux bords opposés.
+    // Cette étape conserve mieux les textures qu'une simple moyenne propagée.
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const pixel = y * width + x;
+            if (!originalMask[pixel]) continue;
+            let best = null;
+            for (const [forward, backward] of oppositeDirections) {
+                const first = knownSample(x, y, forward[0], forward[1]);
+                const second = knownSample(x, y, backward[0], backward[1]);
+                if (!first || !second) continue;
+                const score = colorDistance(first, second) + (first.distance + second.distance) * 0.45;
+                if (!best || score < best.score) best = {first, second, score};
+            }
+            if (!best) continue;
+            const target = pixel * 4;
+            const totalDistance = best.first.distance + best.second.distance;
+            const firstWeight = best.second.distance / totalDistance;
+            const secondWeight = best.first.distance / totalDistance;
+            const textureSample = best.first.distance <= best.second.distance ? best.first : best.second;
+            for (let channel = 0; channel < 3; channel++) {
+                const firstValue = source[best.first.pixel * 4 + channel];
+                const secondValue = source[best.second.pixel * 4 + channel];
+                const interpolation = firstValue * firstWeight + secondValue * secondWeight;
+                const texture = source[textureSample.pixel * 4 + channel] - localMean(textureSample, channel);
+                pixels[target + channel] = clamp(interpolation + texture * 0.58, 0, 255);
+            }
+            pixels[target + 3] = source[target + 3];
+            state[pixel] = 0;
+        }
+    }
+
     const queued = new Uint8Array(mask.length);
     const queue = [];
     const neighbors = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
