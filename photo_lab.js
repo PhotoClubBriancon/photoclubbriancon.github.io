@@ -16,11 +16,18 @@
     const compare = byId('photoLabCompare');
     const divider = byId('photoLabDivider');
     const fullscreenButton = byId('photoLabFullscreen');
+    const standardMode = byId('photoLabStandardMode');
     const advancedToggle = byId('photoLabAdvancedToggle');
     const cropOverlay = byId('photoLabCropOverlay');
     const horizonLine = byId('photoLabHorizonLine');
     const denoise = byId('photoLabDenoise');
     const denoiseValue = byId('photoLabDenoiseValue');
+    const denoiseLuminance = byId('photoLabDenoiseLuminance');
+    const denoiseLuminanceValue = byId('photoLabDenoiseLuminanceValue');
+    const denoiseChroma = byId('photoLabDenoiseChroma');
+    const denoiseChromaValue = byId('photoLabDenoiseChromaValue');
+    const denoiseDetail = byId('photoLabDenoiseDetail');
+    const denoiseDetailValue = byId('photoLabDenoiseDetailValue');
     const autoStrength = byId('photoLabAutoStrength');
     const autoStrengthValue = byId('photoLabAutoStrengthValue');
     const dehaze = byId('photoLabDehaze');
@@ -114,7 +121,7 @@
 
     let sourceFile = null;
     let sourceBitmap = null;
-    let preset = 'natural';
+    let preset = 'none';
     let requestSequence = 0;
     let previewGeneration = 0;
     let previewTimer = 0;
@@ -172,6 +179,7 @@
             const image = new ImageData(new Uint8ClampedArray(message.buffer), message.width, message.height);
             image.photoLabHistogram = message.histogram || null;
             image.photoLabAccelerator = message.accelerator || 'cpu';
+            image.photoLabNeutral = Boolean(message.neutral);
             task.resolve(image);
         }
     };
@@ -185,6 +193,9 @@
         return {
             preset,
             denoise: Number(denoise.value),
+            denoiseLuminance: Number(denoiseLuminance.value),
+            denoiseChroma: Number(denoiseChroma.value),
+            denoiseDetail: Number(denoiseDetail.value),
             autoStrength: Number(autoStrength.value),
             dehaze: Number(dehaze.value),
             saturation: Number(saturation.value),
@@ -459,7 +470,9 @@
             renderRetouchOverlay();
             setProgress(100);
             window.setTimeout(() => setProgress(0, false), 300);
-            setStatus(`Aperçu prêt · source ${sourceBitmap.width} × ${sourceBitmap.height} px`);
+            setStatus(result.photoLabNeutral
+                ? `Original intact · aucune correction · ${sourceBitmap.width} × ${sourceBitmap.height} px`
+                : `Aperçu traité · source ${sourceBitmap.width} × ${sourceBitmap.height} px`);
         } catch (error) {
             setProgress(0, false);
             setStatus(error.message || 'Aperçu impossible.', true);
@@ -586,14 +599,8 @@
             sourceBitmap = raw ? await decodeRaw(file) : await createImageBitmap(file, {imageOrientation: 'from-image'});
             if (sourceBitmap.width * sourceBitmap.height > 60000000) throw new Error('La photographie dépasse la limite de 60 mégapixels.');
             sourceFile = file;
-            retouchActions = [];
-            activeRetouchAction = null;
-            localMaskActions = [];
-            activeLocalMaskAction = null;
-            setRetouchMode(false);
-            setLocalMaskMode(false);
-            updateRetouchUi();
-            updateLocalMaskUi();
+            resetDevelopSettings();
+            setAdjustmentMode(false);
             crop = {x: 0, y: 0, width: 1, height: 1};
             rotationDegrees = 0;
             rotation.value = '0';
@@ -735,6 +742,33 @@
         updateCurvePreview();
     }
 
+    function setAdjustmentMode(advanced) {
+        if (!advanced) { setRetouchMode(false); setLocalMaskMode(false); }
+        root.classList.toggle('advanced-mode', advanced);
+        standardMode.classList.toggle('active', !advanced);
+        advancedToggle.classList.toggle('active', advanced);
+        standardMode.setAttribute('aria-pressed', String(!advanced));
+        advancedToggle.setAttribute('aria-pressed', String(advanced));
+    }
+
+    function resetDevelopSettings() {
+        preset = 'none';
+        root.querySelectorAll('[data-photo-preset]').forEach(button => button.classList.toggle('active', button.dataset.photoPreset === 'none'));
+        denoise.value = '0'; denoiseLuminance.value = '45'; denoiseChroma.value = '70'; denoiseDetail.value = '60'; autoStrength.value = '100';
+        for (const control of [dehaze, saturation, highlights, shadows, exposure, contrast, whites, blacks, temperature, tint, vibrance, clarity, sharpening, lensDistortion, lensVignette, chromaticAberration, localExposure, localSaturation]) control.value = '0';
+        for (const values of Object.values(hslMixer)) Object.assign(values, {hue: 0, saturation: 0, luminance: 0});
+        hslHue.value = hslSaturation.value = hslLuminance.value = '0';
+        toneCurve.value = 'linear';
+        retouchActions = []; activeRetouchAction = null; localMaskActions = []; activeLocalMaskAction = null;
+        setRetouchMode(false); setLocalMaskMode(false); updateRetouchUi(); updateLocalMaskUi();
+        denoiseValue.value = denoiseLabels[0]; denoiseLuminanceValue.value = '45'; denoiseChromaValue.value = '70'; denoiseDetailValue.value = '60'; autoStrengthValue.value = '100 %';
+        dehazeValue.value = saturationValue.value = highlightsValue.value = shadowsValue.value = '0';
+        hslHueValue.value = hslSaturationValue.value = hslLuminanceValue.value = '0';
+        lensDistortionValue.value = lensVignetteValue.value = chromaticAberrationValue.value = '0';
+        localExposureValue.value = '0,0 IL'; localSaturationValue.value = '0';
+        updateAdvancedOutputs();
+    }
+
     function updateZoom() {
         const scale = Number(zoom.value) / 100;
         previewStage.style.width = `${scale * 100}%`;
@@ -872,6 +906,9 @@
     preview.addEventListener('pointerup', finishComparison);
     preview.addEventListener('pointercancel', finishComparison);
     denoise.addEventListener('input', () => { denoiseValue.value = denoiseLabels[Number(denoise.value)]; schedulePreview(); });
+    for (const [control, output] of [[denoiseLuminance, denoiseLuminanceValue], [denoiseChroma, denoiseChromaValue], [denoiseDetail, denoiseDetailValue]]) {
+        control.addEventListener('input', () => { output.value = control.value; schedulePreview(); });
+    }
     autoStrength.addEventListener('input', () => { autoStrengthValue.value = `${autoStrength.value} %`; schedulePreview(); });
     dehaze.addEventListener('input', () => { dehazeValue.value = signedValue(dehaze.value); schedulePreview(); });
     saturation.addEventListener('input', () => { saturationValue.value = signedValue(saturation.value); schedulePreview(); });
@@ -912,15 +949,12 @@
     quality.addEventListener('input', () => { qualityValue.value = `${quality.value} %`; });
     format.addEventListener('change', () => { quality.disabled = format.value === 'image/png'; });
 
-    advancedToggle.addEventListener('click', () => {
-        const enabled = !root.classList.contains('advanced-mode');
-        if (!enabled) { setRetouchMode(false); setLocalMaskMode(false); }
-        root.classList.toggle('advanced-mode', enabled);
-        advancedToggle.setAttribute('aria-pressed', String(enabled));
-        advancedToggle.textContent = enabled ? 'Mode simple' : 'Réglages avancés';
-    });
+    standardMode.addEventListener('click', () => setAdjustmentMode(false));
+    advancedToggle.addEventListener('click', () => setAdjustmentMode(true));
 
     resetAdvanced.addEventListener('click', () => {
+        denoiseLuminance.value = '45'; denoiseChroma.value = '70'; denoiseDetail.value = '60';
+        denoiseLuminanceValue.value = '45'; denoiseChromaValue.value = '70'; denoiseDetailValue.value = '60';
         for (const control of [exposure, contrast, whites, blacks, temperature, tint, vibrance, clarity, sharpening, lensDistortion, lensVignette, chromaticAberration, localExposure, localSaturation]) control.value = '0';
         for (const values of Object.values(hslMixer)) Object.assign(values, {hue: 0, saturation: 0, luminance: 0});
         hslHue.value = hslSaturation.value = hslLuminance.value = '0';
@@ -1007,12 +1041,13 @@
     });
 
     root.querySelectorAll('[data-photo-preset]').forEach(button => button.addEventListener('click', () => {
+        if (button.dataset.photoPreset === 'none') {
+            resetDevelopSettings();
+            schedulePreview();
+            return;
+        }
         preset = button.dataset.photoPreset;
         root.querySelectorAll('[data-photo-preset]').forEach(candidate => candidate.classList.toggle('active', candidate === button));
-        if (preset === 'none') {
-            denoise.value = '0';
-            denoiseValue.value = denoiseLabels[0];
-        }
         schedulePreview();
     }));
 

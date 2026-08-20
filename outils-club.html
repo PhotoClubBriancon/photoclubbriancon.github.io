@@ -22,8 +22,8 @@
 <meta name="twitter:image" content="https://photoclubbriancon.github.io/images/generated/responsive/img_69ccb901e42bf-d15e4d0b01-1920.webp"><link rel="canonical" href="https://photoclubbriancon.github.io/outils-club.html">
 <link rel="alternate" hreflang="fr-FR" href="https://photoclubbriancon.github.io/outils-club.html">
 <link rel="alternate" hreflang="x-default" href="https://photoclubbriancon.github.io/outils-club.html">
+<link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
-<link rel="shortcut icon" href="/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://photoclubbriancon.github.io/#organization","name":"Photo Club Briançonnais","alternateName":["Club photo de Briançon","Club photo Briançon","Photo Club du Briançonnais","Association photo Briançon"],"url":"https://photoclubbriancon.github.io/","description":"Association de photographes à Briançon proposant ateliers, sorties, échanges et expositions pour tous les niveaux.","foundingDate":"1992","areaServed":[{"@type":"City","name":"Briançon"},{"@type":"AdministrativeArea","name":"Hautes-Alpes"},{"@type":"Place","name":"Briançonnais"}],"knowsAbout":["Photographie","Photographie de montagne","Photographie de paysage","Portrait photographique","Photographie animalière","Retouche photo"],"hasOfferCatalog":{"@type":"OfferCatalog","name":"Activités du Photo Club Briançonnais","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Ateliers photographiques à Briançon"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Sorties photo dans le Briançonnais"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Analyse et partage de photographies"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Expositions photographiques"}}]},"logo":{"@type":"ImageObject","url":"https://photoclubbriancon.github.io/favicon.png","width":512,"height":512},"address":{"@type":"PostalAddress","streetAddress":"Ancienne école primaire des Cros","postalCode":"05100","addressLocality":"Briançon","addressRegion":"Hautes-Alpes","addressCountry":"FR"},"sameAs":["https://ur13.federation-photo.fr/club/1494/photo-club-du-brianconnais","https://federation-photo.fr/club-ur/photoclub-du-brianconnais/"],"memberOf":{"@type":"Organization","name":"Fédération Photographique de France","url":"https://federation-photo.fr/"},"telephone":"06 11 69 97 34","email":"g.lhotte279@gmail.com","contactPoint":{"@type":"ContactPoint","contactType":"Renseignements et adhésions","telephone":"06 11 69 97 34","email":"g.lhotte279@gmail.com","availableLanguage":"fr","areaServed":"FR-05"},"image":"https://photoclubbriancon.github.io/images/generated/responsive/img_69ccb901e42bf-d15e4d0b01-1920.webp"},{"@type":"WebSite","@id":"https://photoclubbriancon.github.io/#website","url":"https://photoclubbriancon.github.io/","name":"Photo Club Briançonnais","alternateName":["Club photo de Briançon","Club photo Briançon","Photo Club du Briançonnais"],"description":"Club photo à Briançon : ateliers, sorties dans les Hautes-Alpes, échanges et expositions pour tous les niveaux. Cotisation annuelle : 30 €.","inLanguage":"fr-FR","publisher":{"@id":"https://photoclubbriancon.github.io/#organization"}},{"@type":"WebPage","@id":"https://photoclubbriancon.github.io/outils-club.html#webpage","url":"https://photoclubbriancon.github.io/outils-club.html","name":"Outils photo gratuits en ligne — Photo Club Briançonnais","description":"Développez vos RAW et améliorez gratuitement vos photos dans le navigateur : réglage automatique, débruitage, recadrage, redressement et export concours.","inLanguage":"fr-FR","isPartOf":{"@id":"https://photoclubbriancon.github.io/#website"},"about":{"@id":"https://photoclubbriancon.github.io/#organization"}}]}</script>
 <!-- Meta verification (remplissez les valeurs dans l'editeur) -->
@@ -396,6 +396,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-fullscreen { padding:7px 11px; font-size:.76rem; }
 .photo-lab-advanced-toggle { padding:7px 11px; font-size:.76rem; }
 .photo-lab-advanced-toggle[aria-pressed=true] { color:#17120a; background:var(--gold); border-color:var(--gold); font-weight:700; }
+.photo-lab-mode-switch { display:flex; padding:3px; border:1px solid rgba(212,175,55,.28); border-radius:10px; background:#0d0d0d; }
+.photo-lab-mode-switch button { border:0; border-radius:7px; padding:7px 11px; color:var(--text-dim); background:transparent; font:inherit; font-size:.76rem; cursor:pointer; }
+.photo-lab-mode-switch button.active { color:#17120a; background:var(--gold); font-weight:700; }
 .photo-lab-advanced { display:none; }
 .photo-lab.advanced-mode .photo-lab-advanced { display:block; }
 .photo-lab-curve-preview { margin-top:12px; padding:10px; border:1px solid rgba(212,175,55,.18); border-radius:10px; background:#090909; }
@@ -516,7 +519,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                 </div>
                 <div class="photo-lab-head-actions">
                     <span class="photo-lab-badge">100 % local · aucun pixel envoyé</span>
-                    <button type="button" class="btn btn-outline photo-lab-advanced-toggle" id="photoLabAdvancedToggle" aria-pressed="false">Réglages avancés</button>
+                    <div class="photo-lab-mode-switch" role="group" aria-label="Mode de réglage">
+                        <button type="button" class="active" id="photoLabStandardMode" aria-pressed="true">Standard</button>
+                        <button type="button" id="photoLabAdvancedToggle" aria-pressed="false">Avancé</button>
+                    </div>
                     <button type="button" class="btn btn-outline photo-lab-fullscreen" id="photoLabFullscreen">⛶ Plein écran</button>
                 </div>
             </div>
@@ -557,7 +563,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                     <div class="photo-lab-panel">
                         <div id="photoLabRenderPanel">
                         <div class="photo-lab-engine photo-lab-advanced"><span>Moteur de calcul</span><strong id="photoLabEngineStatus">Détection…</strong></div>
-                        <details class="photo-lab-section photo-lab-advanced" open>
+                        <details class="photo-lab-section" open>
                             <summary>Histogramme RVB</summary>
                             <div class="photo-lab-section-body">
                                 <canvas class="photo-lab-histogram" id="photoLabHistogram" width="360" height="104" aria-label="Histogramme rouge, vert, bleu et luminosité"></canvas>
@@ -568,12 +574,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                             <summary>Préréglages</summary>
                             <div class="photo-lab-section-body">
                                 <div class="photo-lab-presets" role="group" aria-label="Réglage photographique">
-                                    <button type="button" class="photo-lab-preset active" data-photo-preset="natural">Auto naturel</button>
+                                    <button type="button" class="photo-lab-preset" data-photo-preset="natural">Auto naturel</button>
                                     <button type="button" class="photo-lab-preset" data-photo-preset="dynamic">Auto dynamique</button>
                                     <button type="button" class="photo-lab-preset" data-photo-preset="silhouette">Auto silhouette</button>
                                     <button type="button" class="photo-lab-preset" data-photo-preset="bw">Noir &amp; blanc</button>
                                     <button type="button" class="photo-lab-preset" data-photo-preset="bw-contrast">N&amp;B contrasté</button>
-                                    <button type="button" class="photo-lab-preset" data-photo-preset="none">Original</button>
+                                    <button type="button" class="photo-lab-preset active" data-photo-preset="none">Original</button>
                                 </div>
                             </div>
                         </details>
@@ -594,8 +600,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 </div>
                             </div>
                         </details>
-                        <details class="photo-lab-section photo-lab-advanced">
-                            <summary>Lumière avancée</summary>
+                        <details class="photo-lab-section" open>
+                            <summary>Réglages de base</summary>
                             <div class="photo-lab-section-body">
                                 <div class="photo-lab-row">
                                     <label for="photoLabExposure">Exposition</label><output id="photoLabExposureValue">0,0 IL</output>
@@ -628,8 +634,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 </div>
                             </div>
                         </details>
-                        <details class="photo-lab-section photo-lab-advanced">
-                            <summary>Balance des couleurs</summary>
+                        <details class="photo-lab-section">
+                            <summary>Couleur</summary>
                             <div class="photo-lab-section-body">
                                 <div class="photo-lab-row">
                                     <label for="photoLabTemperature">Température</label><output id="photoLabTemperatureValue">0</output>
@@ -689,11 +695,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                             <summary>Détails et bruit</summary>
                             <div class="photo-lab-section-body">
                                 <div class="photo-lab-row">
-                                    <label for="photoLabDenoise">Débruitage préservant les détails</label><output id="photoLabDenoiseValue">Léger</output>
-                                    <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="1">
+                                    <label for="photoLabDenoise">Débruitage préservant les détails</label><output id="photoLabDenoiseValue">Aucun</output>
+                                    <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="0">
                                 </div>
-                                <p class="photo-lab-section-note">Le bruit coloré est atténué plus fortement que la texture et les contours. Commencez par « Léger ».</p>
                                 <div class="photo-lab-advanced">
+                                    <div class="photo-lab-row"><label for="photoLabDenoiseLuminance">Bruit de luminance</label><output id="photoLabDenoiseLuminanceValue">45</output><input id="photoLabDenoiseLuminance" type="range" min="0" max="100" value="45"></div>
+                                    <div class="photo-lab-row"><label for="photoLabDenoiseChroma">Bruit de couleur</label><output id="photoLabDenoiseChromaValue">70</output><input id="photoLabDenoiseChroma" type="range" min="0" max="100" value="70"></div>
+                                    <div class="photo-lab-row"><label for="photoLabDenoiseDetail">Conservation des détails</label><output id="photoLabDenoiseDetailValue">60</output><input id="photoLabDenoiseDetail" type="range" min="0" max="100" value="60"></div>
+                                </div>
+                                <p class="photo-lab-section-note">Le moteur estime automatiquement le bruit, traite séparément luminance et couleur, puis protège contours et textures. Commencez par « Léger ».</p>
+                                <div>
                                     <div class="photo-lab-row">
                                         <label for="photoLabClarity">Microcontraste</label><output id="photoLabClarityValue">0</output>
                                         <input id="photoLabClarity" type="range" min="-100" max="100" step="1" value="0">

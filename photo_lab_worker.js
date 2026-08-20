@@ -6,47 +6,113 @@ const smoothstep = (edge0, edge1, value) => {
     return position * position * (3 - 2 * position);
 };
 
-function denoisePass(source, width, height, strength) {
-    const output = new Uint8ClampedArray(source.length);
-    const weights = [1, 2, 1, 2, 4, 2, 1, 2, 1];
-    const thresholds = [0, 11, 18, 27];
-    const chromaAmounts = [0, 0.34, 0.5, 0.64];
-    const lumaAmounts = [0, 0.1, 0.17, 0.24];
-    const threshold = thresholds[strength];
+function estimateNoise(luma, width, height) {
+    const histogram = new Uint32Array(64);
+    const stride = Math.max(1, Math.floor(Math.sqrt(width * height / 180000)));
+    let samples = 0;
+    for (let y = 1; y < height - 1; y += stride) {
+        for (let x = 1; x < width - 1; x += stride) {
+            const pixel = y * width + x;
+            const left = luma[pixel - 1], right = luma[pixel + 1];
+            const top = luma[pixel - width], bottom = luma[pixel + width];
+            const minimum = Math.min(left, right, top, bottom);
+            const maximum = Math.max(left, right, top, bottom);
+            if (maximum - minimum > 28) continue;
+            const residual = Math.min(63, Math.round(Math.abs(luma[pixel] - (left + right + top + bottom) * 0.25)));
+            histogram[residual]++;
+            samples++;
+        }
+    }
+    if (!samples) return 4;
+    const target = samples * 0.5;
+    let total = 0;
+    for (let residual = 0; residual < histogram.length; residual++) {
+        total += histogram[residual];
+        if (total >= target) return clamp(residual * 1.48, 1.5, 24);
+    }
+    return 4;
+}
+
+function denoisePass(source, width, height, strength, settings = {}) {
+    const pixelCount = width * height;
+    const luminance = new Float32Array(pixelCount);
+    const orangeBlue = new Float32Array(pixelCount);
+    const greenMagenta = new Float32Array(pixelCount);
+    for (let pixel = 0, index = 0; pixel < pixelCount; pixel++, index += 4) {
+        const red = source[index], green = source[index + 1], blue = source[index + 2];
+        luminance[pixel] = (red + green * 2 + blue) * 0.25;
+        orangeBlue[pixel] = red - blue;
+        greenMagenta[pixel] = green - (red + blue) * 0.5;
+    }
+
+    const noise = estimateNoise(luminance, width, height);
+    const lumaControl = clamp(Number(settings.denoiseLuminance ?? 45), 0, 100) / 100;
+    const chromaControl = clamp(Number(settings.denoiseChroma ?? 70), 0, 100) / 100;
+    const detailControl = clamp(Number(settings.denoiseDetail ?? 60), 0, 100) / 100;
+    const lumaBase = [0, 0.44, 0.66, 0.82][strength] * lumaControl;
+    const chromaBase = [0, 0.58, 0.78, 0.9][strength] * chromaControl;
+    let radius = [0, 1, 2, 3][strength];
+    if (pixelCount > 22000000) radius = Math.min(radius, 1);
+    else if (pixelCount > 9000000) radius = Math.min(radius, 2);
+    const spatialSigma = Math.max(0.8, radius * 0.78);
+    const rangeSigma = Math.max(5, noise * (2.2 + strength * 0.35) + strength * 2.2);
     const rangeWeights = new Float32Array(256);
     for (let difference = 0; difference < rangeWeights.length; difference++) {
-        rangeWeights[difference] = Math.exp(-(difference * difference) / (2 * threshold * threshold));
+        rangeWeights[difference] = Math.exp(-(difference * difference) / (2 * rangeSigma * rangeSigma));
     }
+    const kernelSize = radius * 2 + 1;
+    const spatialWeights = new Float32Array(kernelSize * kernelSize);
+    for (let offsetY = -radius, kernel = 0; offsetY <= radius; offsetY++) {
+        for (let offsetX = -radius; offsetX <= radius; offsetX++, kernel++) {
+            spatialWeights[kernel] = Math.exp(-(offsetX * offsetX + offsetY * offsetY) / (2 * spatialSigma * spatialSigma));
+        }
+    }
+
+    const output = new Uint8ClampedArray(source.length);
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            const centerIndex = (y * width + x) * 4;
-            const centerLuma = source[centerIndex] * 0.2126 + source[centerIndex + 1] * 0.7152 + source[centerIndex + 2] * 0.0722;
-            let red = 0, green = 0, blue = 0, total = 0, weightIndex = 0;
-            for (let offsetY = -1; offsetY <= 1; offsetY++) {
+            const pixel = y * width + x;
+            const centerLuma = luminance[pixel];
+            let filteredLuma = 0, filteredOrangeBlue = 0, filteredGreenMagenta = 0, total = 0, kernel = 0;
+            for (let offsetY = -radius; offsetY <= radius; offsetY++) {
                 const sampleY = clamp(y + offsetY, 0, height - 1);
-                for (let offsetX = -1; offsetX <= 1; offsetX++, weightIndex++) {
+                for (let offsetX = -radius; offsetX <= radius; offsetX++, kernel++) {
                     const sampleX = clamp(x + offsetX, 0, width - 1);
-                    const sampleIndex = (sampleY * width + sampleX) * 4;
-                    const sampleLuma = source[sampleIndex] * 0.2126 + source[sampleIndex + 1] * 0.7152 + source[sampleIndex + 2] * 0.0722;
-                    const difference = Math.abs(sampleLuma - centerLuma);
-                    if (difference > threshold * 2.6 && sampleIndex !== centerIndex) continue;
-                    const weight = weights[weightIndex] * rangeWeights[Math.min(255, Math.round(difference))];
-                    red += source[sampleIndex] * weight;
-                    green += source[sampleIndex + 1] * weight;
-                    blue += source[sampleIndex + 2] * weight;
+                    const sample = sampleY * width + sampleX;
+                    const difference = Math.min(255, Math.round(Math.abs(luminance[sample] - centerLuma)));
+                    const weight = spatialWeights[kernel] * rangeWeights[difference];
+                    filteredLuma += luminance[sample] * weight;
+                    filteredOrangeBlue += orangeBlue[sample] * weight;
+                    filteredGreenMagenta += greenMagenta[sample] * weight;
                     total += weight;
                 }
             }
-            const filtered = [red / total, green / total, blue / total];
-            const filteredLuma = filtered[0] * 0.2126 + filtered[1] * 0.7152 + filtered[2] * 0.0722;
-            for (let channel = 0; channel < 3; channel++) {
-                const center = source[centerIndex + channel];
-                const chromaFiltered = filtered[channel] + centerLuma - filteredLuma;
-                let value = center + (chromaFiltered - center) * chromaAmounts[strength];
-                value += (filteredLuma - centerLuma) * lumaAmounts[strength];
-                output[centerIndex + channel] = clamp(value, 0, 255);
-            }
-            output[centerIndex + 3] = source[centerIndex + 3];
+            filteredLuma /= total;
+            filteredOrangeBlue /= total;
+            filteredGreenMagenta /= total;
+
+            const left = luminance[y * width + Math.max(0, x - 1)];
+            const right = luminance[y * width + Math.min(width - 1, x + 1)];
+            const top = luminance[Math.max(0, y - 1) * width + x];
+            const bottom = luminance[Math.min(height - 1, y + 1) * width + x];
+            const edge = Math.hypot(right - left, bottom - top);
+            const edgeProtection = smoothstep(noise * 1.5 + 3, noise * 5 + 24, edge);
+            const texture = Math.abs(centerLuma - filteredLuma);
+            const textureProtection = smoothstep(noise * 1.1 + 1, noise * 3.8 + 12, texture) * detailControl;
+            const lumaAmount = lumaBase * (1 - Math.max(edgeProtection, textureProtection) * 0.92);
+            const chromaAmount = chromaBase * (1 - edgeProtection * detailControl * 0.48);
+            const outputLuma = centerLuma + (filteredLuma - centerLuma) * lumaAmount;
+            const outputOrangeBlue = orangeBlue[pixel] + (filteredOrangeBlue - orangeBlue[pixel]) * chromaAmount;
+            const outputGreenMagenta = greenMagenta[pixel] + (filteredGreenMagenta - greenMagenta[pixel]) * chromaAmount;
+            const intermediate = outputLuma - outputGreenMagenta * 0.5;
+            const blue = intermediate - outputOrangeBlue * 0.5;
+            const red = blue + outputOrangeBlue;
+            const green = intermediate + outputGreenMagenta;
+            const index = pixel * 4;
+            output[index] = clamp(red, 0, 255);
+            output[index + 1] = clamp(green, 0, 255);
+            output[index + 2] = clamp(blue, 0, 255);
+            output[index + 3] = source[index + 3];
         }
     }
     return output;
@@ -463,6 +529,14 @@ function buildRgbHistogram(pixels) {
     return result;
 }
 
+function isNeutralDevelopment(settings, maskBuffer, localMaskBuffer) {
+    if ((settings.preset || 'none') !== 'none' || maskBuffer || localMaskBuffer) return false;
+    if (settings.toneCurve && settings.toneCurve !== 'linear') return false;
+    const numericSettings = ['denoise', 'dehaze', 'saturation', 'highlights', 'shadows', 'exposure', 'contrast', 'whites', 'blacks', 'temperature', 'tint', 'vibrance', 'clarity', 'sharpening', 'lensDistortion', 'lensVignette', 'chromaticAberration', 'localExposure', 'localSaturation'];
+    if (numericSettings.some(key => Number(settings[key]) !== 0)) return false;
+    return Object.values(settings.hslMixer || {}).every(values => !values || (!Number(values.hue) && !Number(values.saturation) && !Number(values.luminance)));
+}
+
 function applyTonalAdjustments(pixels, highlights, shadows) {
     const highlightAmount = clamp(Number(highlights) || 0, -100, 100) / 100;
     const shadowAmount = clamp(Number(shadows) || 0, -100, 100) / 100;
@@ -647,9 +721,14 @@ self.onmessage = event => {
             self.postMessage({id, spots: detectDustSpots(pixels, width, height)});
             return;
         }
+        if (isNeutralDevelopment(settings, maskBuffer, localMaskBuffer)) {
+            const histogram = buildRgbHistogram(pixels);
+            self.postMessage({id, width, height, buffer: pixels.buffer, histogram, accelerator: 'cpu', neutral: true}, [pixels.buffer]);
+            return;
+        }
         const denoise = clamp(Number(settings.denoise) || 0, 0, 3);
         if (denoise > 0) {
-            pixels = denoisePass(pixels, width, height, denoise);
+            pixels = denoisePass(pixels, width, height, denoise, settings);
             self.postMessage({id, progress: 58});
         }
         const automaticBase = new Uint8ClampedArray(pixels);
