@@ -16,8 +16,7 @@
     const compare = byId('photoLabCompare');
     const divider = byId('photoLabDivider');
     const fullscreenButton = byId('photoLabFullscreen');
-    const standardMode = byId('photoLabStandardMode');
-    const advancedToggle = byId('photoLabAdvancedToggle');
+    const advancedBody = byId('photoLabAdvancedBody');
     const cropOverlay = byId('photoLabCropOverlay');
     const horizonLine = byId('photoLabHorizonLine');
     const denoise = byId('photoLabDenoise');
@@ -112,7 +111,9 @@
     const progress = byId('photoLabProgress');
     const progressBar = progress.querySelector('span');
 
-    const worker = new Worker('/photo_lab_worker.js');
+    root.querySelectorAll('.photo-lab-advanced').forEach(section => advancedBody?.append(section));
+
+    const worker = new Worker('/photo_lab_worker.js?v=20260820-nef-z63-2');
     const pending = new Map();
     const denoiseLabels = ['Aucun', 'Léger', 'Moyen', 'Fort'];
     const rawExtensions = new Set(['3fr', 'ari', 'arw', 'bay', 'cap', 'cine', 'cr2', 'cr3', 'crw', 'dcr', 'dng', 'erf', 'fff', 'gpr', 'iiq', 'kdc', 'mdc', 'mef', 'mos', 'mrw', 'nef', 'nrw', 'orf', 'pef', 'ptx', 'raf', 'raw', 'rw2', 'rwl', 'sr2', 'srf', 'srw', 'x3f']);
@@ -121,6 +122,7 @@
 
     let sourceFile = null;
     let sourceBitmap = null;
+    let sourceDecodeNotice = '';
     let preset = 'none';
     let requestSequence = 0;
     let previewGeneration = 0;
@@ -346,6 +348,13 @@
         healToggle.classList.toggle('btn-gold', enabled);
         healToggle.classList.toggle('btn-outline', !enabled);
         healToggle.textContent = enabled ? 'Pinceau actif · peignez sur la photo' : 'Activer le pinceau correcteur';
+        if (enabled) {
+            // L'outil doit afficher partout le résultat traité. À 50 %, toute correction
+            // peinte dans la moitié « avant » restait volontairement invisible.
+            compare.value = '0';
+            updateComparison();
+            setStatus('Pinceau actif · peignez la poussière puis relâchez pour appliquer la correction.');
+        }
     }
 
     function retouchPointFromPointer(event) {
@@ -470,9 +479,10 @@
             renderRetouchOverlay();
             setProgress(100);
             window.setTimeout(() => setProgress(0, false), 300);
-            setStatus(result.photoLabNeutral
+            const decodeSuffix = sourceDecodeNotice ? ` · ${sourceDecodeNotice}` : '';
+            setStatus((result.photoLabNeutral
                 ? `Original intact · aucune correction · ${sourceBitmap.width} × ${sourceBitmap.height} px`
-                : `Aperçu traité · source ${sourceBitmap.width} × ${sourceBitmap.height} px`);
+                : `Aperçu traité · source ${sourceBitmap.width} × ${sourceBitmap.height} px`) + decodeSuffix);
         } catch (error) {
             setProgress(0, false);
             setStatus(error.message || 'Aperçu impossible.', true);
@@ -536,19 +546,162 @@
         return rawExtensions.has((file.name.split('.').pop() || '').toLowerCase());
     }
 
-    async function decodeRaw(file) {
-        if (!window.crossOriginIsolated || typeof window.SharedArrayBuffer === 'undefined' || typeof window.WebAssembly === 'undefined') {
-            throw new Error('Le traitement RAW n’est pas disponible dans ce navigateur. Actualisez la page, puis réessayez avec une version récente de Chrome, Edge, Firefox ou Safari. Les fichiers JPEG, PNG et WebP restent utilisables.');
+    async function bitmapFromRawThumbnail(thumbnail) {
+        if (!thumbnail?.data?.length || !thumbnail.width || !thumbnail.height) return null;
+        if (thumbnail.format === 'jpeg') {
+            return await createImageBitmap(new Blob([thumbnail.data], {type: 'image/jpeg'}), {imageOrientation: 'from-image'});
         }
-        setStatus('Chargement du décodeur RAW local…');
-        setProgress(4);
-        const {default: LibRaw} = await import('/vendor/libraw/index.js');
-        const decoder = new LibRaw();
+        if (thumbnail.format !== 'bitmap' || thumbnail.data.length < thumbnail.width * thumbnail.height * 3) return null;
+        const rgba = new Uint8ClampedArray(thumbnail.width * thumbnail.height * 4);
+        for (let pixel = 0; pixel < thumbnail.width * thumbnail.height; pixel++) {
+            rgba[pixel * 4] = thumbnail.data[pixel * 3];
+            rgba[pixel * 4 + 1] = thumbnail.data[pixel * 3 + 1];
+            rgba[pixel * 4 + 2] = thumbnail.data[pixel * 3 + 2];
+            rgba[pixel * 4 + 3] = 255;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = thumbnail.width;
+        canvas.height = thumbnail.height;
+        canvas.getContext('2d', {alpha: false}).putImageData(new ImageData(rgba, thumbnail.width, thumbnail.height), 0, 0);
+        return await createImageBitmap(canvas);
+    }
+
+    function inspectTiffRaw(bytes) {
+        if (bytes.length < 16) return null;
+        const byteOrder = String.fromCharCode(bytes[0], bytes[1]);
+        if (byteOrder !== 'II' && byteOrder !== 'MM') return null;
+        const littleEndian = byteOrder === 'II';
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        const readU16 = offset => offset >= 0 && offset + 2 <= bytes.length ? view.getUint16(offset, littleEndian) : null;
+        const readU32 = offset => offset >= 0 && offset + 4 <= bytes.length ? view.getUint32(offset, littleEndian) : null;
+        if (readU16(2) !== 42) return null;
+        const typeSizes = {1: 1, 2: 1, 3: 2, 4: 4, 7: 1, 9: 4};
+        const visited = new Set();
+        const jpegRanges = [];
+        const compressions = new Set();
+        let make = '', model = '';
+
+        const readValues = (type, count, entryOffset) => {
+            if (!typeSizes[type] || count < 1 || count > 1000000) return [];
+            const size = typeSizes[type] * count;
+            const offset = size <= 4 ? entryOffset + 8 : readU32(entryOffset + 8);
+            if (offset === null || offset < 0 || offset + size > bytes.length) return [];
+            if (type === 2) {
+                let value = '';
+                for (let index = 0; index < count && bytes[offset + index]; index++) value += String.fromCharCode(bytes[offset + index]);
+                return [value];
+            }
+            const values = [];
+            for (let index = 0; index < count; index++) {
+                if (type === 3) values.push(readU16(offset + index * 2));
+                else if (type === 4) values.push(readU32(offset + index * 4));
+                else values.push(bytes[offset + index]);
+            }
+            return values.filter(value => value !== null);
+        };
+
+        const readIfd = (offset, depth = 0) => {
+            if (!offset || depth > 12 || visited.has(offset) || offset + 2 > bytes.length) return;
+            visited.add(offset);
+            const count = readU16(offset);
+            if (count === null || count > 1024 || offset + 2 + count * 12 + 4 > bytes.length) return;
+            let jpegOffset = null, jpegLength = null;
+            const subIfds = [];
+            for (let index = 0; index < count; index++) {
+                const entryOffset = offset + 2 + index * 12;
+                const tag = readU16(entryOffset), type = readU16(entryOffset + 2), itemCount = readU32(entryOffset + 4);
+                if (tag === null || type === null || itemCount === null) continue;
+                const values = readValues(type, itemCount, entryOffset);
+                if (tag === 259 && values[0] !== undefined) compressions.add(values[0]);
+                else if (tag === 271 && typeof values[0] === 'string') make = values[0];
+                else if (tag === 272 && typeof values[0] === 'string') model = values[0];
+                else if (tag === 330) subIfds.push(...values);
+                else if (tag === 513) jpegOffset = values[0];
+                else if (tag === 514) jpegLength = values[0];
+            }
+            if (jpegOffset !== null && jpegLength > 32768 && jpegOffset + jpegLength <= bytes.length
+                && bytes[jpegOffset] === 0xff && bytes[jpegOffset + 1] === 0xd8) {
+                jpegRanges.push({start: jpegOffset, end: jpegOffset + jpegLength, size: jpegLength});
+            }
+            subIfds.forEach(child => readIfd(child, depth + 1));
+            const nextOffset = readU32(offset + 2 + count * 12);
+            if (nextOffset) readIfd(nextOffset, depth + 1);
+        };
+        readIfd(readU32(4));
+        return {
+            make,
+            model,
+            compressions: [...compressions],
+            jpegRanges,
+            unsupportedNikonHighEfficiency: /NIKON/i.test(make) && compressions.has(34713),
+        };
+    }
+
+    async function decodeBestEmbeddedJpeg(bytes, candidates) {
+        const uniqueCandidates = [...new Map(candidates.map(candidate => [`${candidate.start}:${candidate.end}`, candidate])).values()]
+            .filter(candidate => candidate.start >= 0 && candidate.end <= bytes.length && candidate.end - candidate.start > 32768)
+            .sort((left, right) => right.size - left.size);
+        let best = null;
+        for (const candidate of uniqueCandidates.slice(0, 12)) {
+            try {
+                const blob = new Blob([bytes.subarray(candidate.start, candidate.end)], {type: 'image/jpeg'});
+                const bitmap = await createImageBitmap(blob, {imageOrientation: 'from-image'});
+                if (!best || bitmap.width * bitmap.height > best.width * best.height) {
+                    best?.close?.();
+                    best = bitmap;
+                } else bitmap.close?.();
+            } catch (_) {
+                // Continue avec l'aperçu JPEG suivant éventuel.
+            }
+        }
+        return best;
+    }
+
+    async function extractEmbeddedJpeg(file, suppliedBytes = null, tiffInfo = null) {
+        const bytes = suppliedBytes || new Uint8Array(await file.arrayBuffer());
+        const directCandidates = (tiffInfo || inspectTiffRaw(bytes))?.jpegRanges || [];
+        const directBitmap = await decodeBestEmbeddedJpeg(bytes, directCandidates);
+        if (directBitmap) return directBitmap;
+
+        const candidates = [];
+        let start = -1;
+        for (let index = 0; index < bytes.length - 2; index++) {
+            if (start < 0 && bytes[index] === 0xff && bytes[index + 1] === 0xd8 && bytes[index + 2] === 0xff) {
+                start = index;
+                index += 2;
+            } else if (start >= 0 && bytes[index] === 0xff && bytes[index + 1] === 0xd9) {
+                const end = index + 2;
+                if (end - start > 32768) candidates.push({start, end, size: end - start});
+                start = -1;
+                index++;
+            }
+        }
+        return await decodeBestEmbeddedJpeg(bytes, candidates);
+    }
+
+    async function decodeRaw(file) {
+        const rawEngineAvailable = window.crossOriginIsolated && typeof window.SharedArrayBuffer !== 'undefined' && typeof window.WebAssembly !== 'undefined';
+        let decoder = null;
+        let rawError = null;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const tiffInfo = inspectTiffRaw(bytes);
         try {
-            const bytes = new Uint8Array(await file.arrayBuffer());
+            if (tiffInfo?.unsupportedNikonHighEfficiency) {
+                setStatus(`Nikon ${tiffInfo.model || 'NEF'} haute efficacité : ouverture de l’aperçu pleine définition…`);
+                setProgress(12);
+                const embeddedBitmap = await extractEmbeddedJpeg(file, bytes, tiffInfo);
+                if (!embeddedBitmap) throw new Error('Aucun aperçu JPEG pleine définition décodable dans ce NEF.');
+                sourceDecodeNotice = `Nikon ${tiffInfo.model || 'Z6 III'} HE/HE* · aperçu JPEG pleine définition`;
+                return embeddedBitmap;
+            }
+            if (!rawEngineAvailable) throw new Error('Moteur RAW WebAssembly indisponible dans ce navigateur.');
+            setStatus('Chargement du décodeur RAW local…');
+            setProgress(4);
+            const {default: LibRaw} = await import('/vendor/libraw/index.js');
+            decoder = new LibRaw();
             setStatus('Développement du fichier RAW…');
             setProgress(12);
-            await decoder.open(bytes, {
+            await decoder.open(bytes.slice(), {
                 useCameraWb: true,
                 useCameraMatrix: 1,
                 outputColor: 1,
@@ -556,7 +709,19 @@
                 highlight: 3,
                 userQual: 3,
             });
-            const decoded = await decoder.imageData();
+            let decoded;
+            try {
+                decoded = await decoder.imageData();
+            } catch (error) {
+                rawError = error;
+                const thumbnail = await decoder.thumbnailData().catch(() => null);
+                const thumbnailBitmap = await bitmapFromRawThumbnail(thumbnail).catch(() => null);
+                if (thumbnailBitmap) {
+                    sourceDecodeNotice = 'compatibilité NEF HE/HE* : aperçu JPEG intégré';
+                    return thumbnailBitmap;
+                }
+                throw error;
+            }
             if (!decoded?.data || !decoded.width || !decoded.height) throw new Error('Ce fichier RAW n’a pas pu être développé.');
             if (decoded.width * decoded.height > 60000000) throw new Error('Ce RAW dépasse la limite de 60 mégapixels du laboratoire en ligne.');
             const channels = Math.max(3, Number(decoded.colors) || 3);
@@ -576,8 +741,18 @@
             canvas.height = decoded.height;
             canvas.getContext('2d', {alpha: false}).putImageData(new ImageData(rgba, decoded.width, decoded.height), 0, 0);
             return await createImageBitmap(canvas);
+        } catch (error) {
+            rawError = rawError || error;
+            setStatus('Compression RAW non décodable : recherche de l’aperçu intégré…');
+            setProgress(16);
+            const embeddedBitmap = await extractEmbeddedJpeg(file, bytes, tiffInfo).catch(() => null);
+            if (embeddedBitmap) {
+                sourceDecodeNotice = 'compatibilité RAW : aperçu JPEG intégré';
+                return embeddedBitmap;
+            }
+            throw new Error(`Ce RAW n’a pas pu être ouvert localement. Pour un Nikon Z6 III, choisissez NEF « Compression sans perte » plutôt que HE/HE*. (${rawError?.message || 'décodeur indisponible'})`);
         } finally {
-            decoder.dispose();
+            decoder?.dispose();
         }
     }
 
@@ -596,11 +771,11 @@
         setStatus(raw ? 'Ouverture du fichier RAW…' : 'Ouverture de la photographie…');
         try {
             sourceBitmap?.close?.();
+            sourceDecodeNotice = '';
             sourceBitmap = raw ? await decodeRaw(file) : await createImageBitmap(file, {imageOrientation: 'from-image'});
             if (sourceBitmap.width * sourceBitmap.height > 60000000) throw new Error('La photographie dépasse la limite de 60 mégapixels.');
             sourceFile = file;
             resetDevelopSettings();
-            setAdjustmentMode(false);
             crop = {x: 0, y: 0, width: 1, height: 1};
             rotationDegrees = 0;
             rotation.value = '0';
@@ -742,15 +917,6 @@
         updateCurvePreview();
     }
 
-    function setAdjustmentMode(advanced) {
-        if (!advanced) { setRetouchMode(false); setLocalMaskMode(false); }
-        root.classList.toggle('advanced-mode', advanced);
-        standardMode.classList.toggle('active', !advanced);
-        advancedToggle.classList.toggle('active', advanced);
-        standardMode.setAttribute('aria-pressed', String(!advanced));
-        advancedToggle.setAttribute('aria-pressed', String(advanced));
-    }
-
     function resetDevelopSettings() {
         preset = 'none';
         root.querySelectorAll('[data-photo-preset]').forEach(button => button.classList.toggle('active', button.dataset.photoPreset === 'none'));
@@ -850,6 +1016,7 @@
         sourceBitmap?.close?.();
         sourceBitmap = null;
         sourceFile = null;
+        sourceDecodeNotice = '';
         input.value = '';
         retouchActions = [];
         activeRetouchAction = null;
@@ -949,9 +1116,6 @@
     quality.addEventListener('input', () => { qualityValue.value = `${quality.value} %`; });
     format.addEventListener('change', () => { quality.disabled = format.value === 'image/png'; });
 
-    standardMode.addEventListener('click', () => setAdjustmentMode(false));
-    advancedToggle.addEventListener('click', () => setAdjustmentMode(true));
-
     resetAdvanced.addEventListener('click', () => {
         denoiseLuminance.value = '45'; denoiseChroma.value = '70'; denoiseDetail.value = '60';
         denoiseLuminanceValue.value = '45'; denoiseChromaValue.value = '70'; denoiseDetailValue.value = '60';
@@ -1003,12 +1167,14 @@
     });
     const finishRetouchStroke = event => {
         if (!activeRetouchAction && !activeLocalMaskAction) return;
+        const finishedHealing = Boolean(activeRetouchAction?.length);
         activeRetouchAction = null;
         activeLocalMaskAction = null;
         retouchCanvas.releasePointerCapture?.(event.pointerId);
         updateRetouchUi();
         updateLocalMaskUi();
         schedulePreview();
+        if (finishedHealing) setStatus('Correction en cours…');
     };
     retouchCanvas.addEventListener('pointerup', finishRetouchStroke);
     retouchCanvas.addEventListener('pointercancel', finishRetouchStroke);
@@ -1030,6 +1196,8 @@
             }
             retouchActions.push(result.spots.map(spot => ({x: spot.x, y: spot.y, radius: spot.radius})));
             updateRetouchUi();
+            compare.value = '0';
+            updateComparison();
             schedulePreview();
             setStatus(`${result.spots.length} poussière${result.spots.length > 1 ? 's' : ''} potentielle${result.spots.length > 1 ? 's' : ''} corrigée${result.spots.length > 1 ? 's' : ''}. Vérifiez le résultat.`);
         } catch (error) {

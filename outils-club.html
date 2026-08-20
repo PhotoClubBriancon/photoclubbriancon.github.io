@@ -392,13 +392,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-section-body { padding:0 15px 16px; }
 .photo-lab-section-note { margin:9px 0 0; color:var(--text-dim); font-size:.74rem; line-height:1.5; }
 .photo-lab-fullscreen { padding:7px 11px; font-size:.76rem; }
-.photo-lab-advanced-toggle { padding:7px 11px; font-size:.76rem; }
-.photo-lab-advanced-toggle[aria-pressed=true] { color:#17120a; background:var(--gold); border-color:var(--gold); font-weight:700; }
-.photo-lab-mode-switch { display:flex; padding:3px; border:1px solid rgba(212,175,55,.28); border-radius:10px; background:#0d0d0d; }
-.photo-lab-mode-switch button { border:0; border-radius:7px; padding:7px 11px; color:var(--text-dim); background:transparent; font:inherit; font-size:.76rem; cursor:pointer; }
-.photo-lab-mode-switch button.active { color:#17120a; background:var(--gold); font-weight:700; }
-.photo-lab-advanced { display:none; }
-.photo-lab.advanced-mode .photo-lab-advanced { display:block; }
+.photo-lab-advanced-menu > .photo-lab-section-body { padding:0; }
+.photo-lab-advanced-menu > summary { background:linear-gradient(90deg,rgba(212,175,55,.12),rgba(212,175,55,.03)); }
+.photo-lab-advanced-menu .photo-lab-engine { margin:12px; }
+.photo-lab-advanced-menu .photo-lab-section { border-top:1px solid rgba(212,175,55,.12); }
 .photo-lab-curve-preview { margin-top:12px; padding:10px; border:1px solid rgba(212,175,55,.18); border-radius:10px; background:#090909; }
 .photo-lab-curve-preview svg { display:block; width:100%; height:88px; }
 .photo-lab-curve-grid { stroke:rgba(255,255,255,.12); stroke-width:1; }
@@ -521,17 +518,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                 </div>
                 <div class="photo-lab-head-actions">
                     <span class="photo-lab-badge">100 % local · aucun pixel envoyé</span>
-                    <div class="photo-lab-mode-switch" role="group" aria-label="Mode de réglage">
-                        <button type="button" class="active" id="photoLabStandardMode" aria-pressed="true">Standard</button>
-                        <button type="button" id="photoLabAdvancedToggle" aria-pressed="false">Avancé</button>
-                    </div>
                     <button type="button" class="btn btn-outline photo-lab-fullscreen" id="photoLabFullscreen">⛶ Plein écran</button>
                 </div>
             </div>
 
             <label class="photo-lab-drop" id="photoLabDrop" for="photoLabInput">
                 <strong style="color:var(--gold);display:block;margin-bottom:6px;">Choisir ou déposer une photo</strong>
-                <span style="color:var(--text-dim);font-size:.86rem;">JPEG, PNG, WebP ou RAW compatible LibRaw · Canon, Nikon, Sony, Fujifilm, Olympus, Panasonic, Pentax, Leica, Hasselblad, Phase One…</span>
+                <span style="color:var(--text-dim);font-size:.86rem;">JPEG, PNG, WebP ou RAW compatible LibRaw · NEF Nikon Z6 III inclus (HE/HE* via aperçu intégré), Canon, Sony, Fujifilm, Olympus, Panasonic, Pentax, Leica…</span>
                 <input id="photoLabInput" type="file" accept="image/jpeg,image/png,image/webp,.3fr,.ari,.arw,.bay,.cap,.cine,.cr2,.cr3,.crw,.dcr,.dng,.erf,.fff,.gpr,.iiq,.kdc,.mdc,.mef,.mos,.mrw,.nef,.nrw,.orf,.pef,.ptx,.raf,.raw,.rw2,.rwl,.sr2,.srf,.srw,.x3f" hidden>
             </label>
 
@@ -700,7 +693,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                     <label for="photoLabDenoise">Débruitage préservant les détails</label><output id="photoLabDenoiseValue">Aucun</output>
                                     <input id="photoLabDenoise" type="range" min="0" max="3" step="1" value="0">
                                 </div>
-                                <div class="photo-lab-advanced">
+                                <div>
                                     <div class="photo-lab-row"><label for="photoLabDenoiseLuminance">Bruit de luminance</label><output id="photoLabDenoiseLuminanceValue">45</output><input id="photoLabDenoiseLuminance" type="range" min="0" max="100" value="45"></div>
                                     <div class="photo-lab-row"><label for="photoLabDenoiseChroma">Bruit de couleur</label><output id="photoLabDenoiseChromaValue">70</output><input id="photoLabDenoiseChroma" type="range" min="0" max="100" value="70"></div>
                                     <div class="photo-lab-row"><label for="photoLabDenoiseDetail">Conservation des détails</label><output id="photoLabDenoiseDetailValue">60</output><input id="photoLabDenoiseDetail" type="range" min="0" max="100" value="60"></div>
@@ -718,7 +711,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                 </div>
                             </div>
                         </details>
-                        <details class="photo-lab-section photo-lab-advanced">
+                        <details class="photo-lab-section">
                             <summary>Effacement et poussières</summary>
                             <div class="photo-lab-section-body">
                                 <div class="photo-lab-row">
@@ -732,7 +725,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                     <button type="button" class="btn btn-outline wide" id="photoLabDustDetect">Détecter les poussières</button>
                                 </div>
                                 <span class="photo-lab-retouch-count" id="photoLabRetouchCount">Aucune correction locale</span>
-                                <p class="photo-lab-section-note">Peignez sur un petit objet : la zone est reconstruite à partir de ses contours et textures voisines, sans génération et sans serveur. La détection des poussières recherche de petites taches sombres dans les surfaces régulières. Vérifiez toujours le résultat avec Avant / Après.</p>
+                                <p class="photo-lab-section-note">Peignez sur une poussière puis relâchez : l’aperçu passe automatiquement sur « Après » et la zone est reconstruite localement, sans serveur. La détection automatique recherche uniquement de petites taches sombres, diffuses et circulaires dans les surfaces régulières afin d’ignorer fleurs, insectes et contours. Vérifiez ensuite le résultat avec Avant / Après.</p>
                             </div>
                         </details>
                         <details class="photo-lab-section photo-lab-advanced">
@@ -795,6 +788,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                                     <button type="button" class="btn btn-outline" id="photoLabClear">Choisir une autre photo</button>
                                 </div>
                             </div>
+                        </details>
+                        <details class="photo-lab-section photo-lab-advanced-menu" id="photoLabAdvancedPanel">
+                            <summary>Réglages avancés</summary>
+                            <div class="photo-lab-section-body" id="photoLabAdvancedBody"></div>
                         </details>
                     </div>
                 </div>
@@ -2273,7 +2270,7 @@ function deleteGalleryImage(path) {
 }
 </script>
 
-<script src="/photo_lab.js" defer></script>
+<script src="/photo_lab.js?v=20260820-nef-z63-2" defer></script>
 
 </body>
 </html>

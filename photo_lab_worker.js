@@ -681,36 +681,105 @@ function inpaintMask(pixels, width, height, mask) {
 
 function detectDustSpots(pixels, width, height) {
     const shortEdge = Math.min(width, height);
-    const radius = clamp(Math.round(shortEdge / 230), 3, 9);
     const stride = shortEdge > 700 ? 2 : 1;
+    const radii = [...new Set([
+        clamp(Math.round(shortEdge / 310), 2, 6),
+        clamp(Math.round(shortEdge / 190), 4, 10),
+    ])];
     const candidates = [];
-    const lumaAt = (x, y) => {
-        const index = (y * width + x) * 4;
-        return pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722;
+    const luma = new Float32Array(width * height);
+    const chromaBlue = new Float32Array(width * height);
+    const chromaRed = new Float32Array(width * height);
+    for (let pixel = 0, index = 0; pixel < luma.length; pixel++, index += 4) {
+        const value = pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722;
+        luma[pixel] = value;
+        chromaBlue[pixel] = pixels[index + 2] - value;
+        chromaRed[pixel] = pixels[index] - value;
+    }
+    const integral = new Float64Array((width + 1) * (height + 1));
+    for (let y = 0; y < height; y++) {
+        let rowTotal = 0;
+        for (let x = 0; x < width; x++) {
+            rowTotal += luma[y * width + x];
+            integral[(y + 1) * (width + 1) + x + 1] = integral[y * (width + 1) + x + 1] + rowTotal;
+        }
+    }
+    const boxMean = (x, y, radius) => {
+        const left = Math.max(0, x - radius), right = Math.min(width - 1, x + radius);
+        const top = Math.max(0, y - radius), bottom = Math.min(height - 1, y + radius);
+        const total = integral[(bottom + 1) * (width + 1) + right + 1] - integral[top * (width + 1) + right + 1]
+            - integral[(bottom + 1) * (width + 1) + left] + integral[top * (width + 1) + left];
+        return total / ((right - left + 1) * (bottom - top + 1));
     };
-    const ring = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
-    for (let y = radius + 1; y < height - radius - 1; y += stride) {
-        for (let x = radius + 1; x < width - radius - 1; x += stride) {
-            const center = lumaAt(x, y);
-            if (center < 5 || center > 235) continue;
-            const samples = ring.map(([dx, dy]) => lumaAt(x + dx * radius, y + dy * radius));
-            const mean = samples.reduce((sum, value) => sum + value, 0) / samples.length;
-            const variance = samples.reduce((sum, value) => sum + (value - mean) ** 2, 0) / samples.length;
-            const darkness = mean - center;
-            if (darkness < 13 || variance > 115) continue;
-            if (center > lumaAt(x - 1, y) || center > lumaAt(x + 1, y) || center > lumaAt(x, y - 1) || center > lumaAt(x, y + 1)) continue;
-            candidates.push({x, y, score: darkness - Math.sqrt(variance) * 0.35});
+    const sampleAt = (array, x, y) => array[clamp(y, 0, height - 1) * width + clamp(x, 0, width - 1)];
+    const directions = Array.from({length: 16}, (_, index) => {
+        const angle = index * Math.PI / 8;
+        return [Math.cos(angle), Math.sin(angle)];
+    });
+
+    for (const radius of radii) {
+        const margin = radius * 3 + 2;
+        for (let y = margin; y < height - margin; y += stride) {
+            for (let x = margin; x < width - margin; x += stride) {
+                const centerPixel = y * width + x;
+                const center = luma[centerPixel];
+                if (center < 8 || center > 242) continue;
+                const innerMean = boxMean(x, y, Math.max(1, Math.round(radius * 0.55)));
+                let ringMean = 0, ringSquare = 0, ringBlue = 0, ringRed = 0, ringBlueSquare = 0, ringRedSquare = 0, texture = 0;
+                const radialDarkness = [];
+                for (const [directionX, directionY] of directions) {
+                    const ringX = Math.round(x + directionX * radius * 2.15);
+                    const ringY = Math.round(y + directionY * radius * 2.15);
+                    const ringPixel = ringY * width + ringX;
+                    const value = luma[ringPixel];
+                    ringMean += value;
+                    ringSquare += value * value;
+                    ringBlue += chromaBlue[ringPixel];
+                    ringRed += chromaRed[ringPixel];
+                    ringBlueSquare += chromaBlue[ringPixel] ** 2;
+                    ringRedSquare += chromaRed[ringPixel] ** 2;
+                    texture += Math.abs(value - (
+                        sampleAt(luma, ringX - 1, ringY) + sampleAt(luma, ringX + 1, ringY)
+                        + sampleAt(luma, ringX, ringY - 1) + sampleAt(luma, ringX, ringY + 1)
+                    ) * 0.25);
+                    radialDarkness.push(value - sampleAt(luma, Math.round(x + directionX * radius * 0.7), Math.round(y + directionY * radius * 0.7)));
+                }
+                ringMean /= directions.length;
+                ringBlue /= directions.length;
+                ringRed /= directions.length;
+                texture /= directions.length;
+                const ringDeviation = Math.sqrt(Math.max(0, ringSquare / directions.length - ringMean * ringMean));
+                const ringColorDeviation = Math.sqrt(
+                    Math.max(0, ringBlueSquare / directions.length - ringBlue * ringBlue)
+                    + Math.max(0, ringRedSquare / directions.length - ringRed * ringRed)
+                );
+                const darkness = ringMean - innerMean;
+                const coreDarkness = innerMean - center;
+                if (darkness < Math.max(4.5, texture * 1.8 + 2.5)) continue;
+                if (coreDarkness < Math.max(0.7, darkness * 0.05)) continue;
+                if (ringDeviation > Math.max(8, darkness * 1.15)) continue;
+                if (ringColorDeviation > Math.max(5, darkness * 0.42)) continue;
+                const horizontalGradient = Math.abs(sampleAt(luma, x + radius, y) - sampleAt(luma, x - radius, y));
+                const verticalGradient = Math.abs(sampleAt(luma, x, y + radius) - sampleAt(luma, x, y - radius));
+                if (Math.hypot(horizontalGradient, verticalGradient) > Math.max(16, darkness * 2.1)) continue;
+                const radialMean = radialDarkness.reduce((sum, value) => sum + value, 0) / radialDarkness.length;
+                const radialDeviation = Math.sqrt(radialDarkness.reduce((sum, value) => sum + (value - radialMean) ** 2, 0) / radialDarkness.length);
+                if (radialDeviation > Math.max(4.5, darkness * 0.7)) continue;
+                const chromaShift = Math.hypot(chromaBlue[centerPixel] - ringBlue, chromaRed[centerPixel] - ringRed);
+                if (chromaShift > Math.max(7, darkness * 0.9)) continue;
+                const score = darkness + coreDarkness * 0.35 - ringDeviation * 0.32 - ringColorDeviation * 0.3 - radialDeviation * 0.45 - texture * 0.8 - chromaShift * 0.18;
+                if (score > 1.5) candidates.push({x, y, radius, score});
+            }
         }
     }
     candidates.sort((a, b) => b.score - a.score);
     const selected = [];
-    const minimumDistance = radius * 2.8;
     for (const candidate of candidates) {
-        if (selected.some(spot => Math.hypot(spot.x - candidate.x, spot.y - candidate.y) < minimumDistance)) continue;
+        if (selected.some(spot => Math.hypot(spot.x - candidate.x, spot.y - candidate.y) < Math.max(spot.radius, candidate.radius) * 2.8)) continue;
         selected.push(candidate);
-        if (selected.length >= 80) break;
+        if (selected.length >= 40) break;
     }
-    return selected.map(spot => ({x: spot.x / width, y: spot.y / height, radius: radius * 1.45 / shortEdge}));
+    return selected.map(spot => ({x: spot.x / width, y: spot.y / height, radius: spot.radius * 1.6 / shortEdge}));
 }
 
 self.onmessage = event => {
