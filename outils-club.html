@@ -375,8 +375,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-view-controls input { grid-column:1/-1; width:100%; accent-color:var(--gold); }
 .photo-lab-controls { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(240px,.8fr); gap:18px; margin-top:18px; }
 .photo-lab-panel { background:#101010; border:1px solid rgba(212,175,55,.15); border-radius:13px; padding:16px; }
-.content { max-width:none; padding-left:clamp(8px,1.2vw,22px); padding-right:clamp(8px,1.2vw,22px); }
-.photo-lab { max-width:none; padding:clamp(12px,1.4vw,22px); }
 .photo-lab-workspace { grid-template-columns:minmax(0,1fr) clamp(310px,28vw,410px); gap:15px; align-items:start; }
 .photo-lab-canvas-column { position:sticky; top:78px; }
 .photo-lab-preview { height:calc(100vh - 245px); min-height:430px; cursor:ew-resize; }
@@ -418,7 +416,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-local-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
 .photo-lab-local-actions .wide { grid-column:1/-1; }
 @media (min-width:1100px) {
-    .photo-lab.has-photo { width:100vw; max-width:none; box-sizing:border-box; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw); padding-left:clamp(8px,1vw,16px); padding-right:clamp(8px,1vw,16px); border-left:0; border-right:0; border-radius:0; }
+    .photo-lab.has-photo { width:100vw; max-width:none; box-sizing:border-box; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw); padding-left:0; padding-right:0; border-left:0; border-right:0; border-radius:0; }
+    .photo-lab.has-photo .photo-lab-head,
+    .photo-lab.has-photo .photo-lab-status,
+    .photo-lab.has-photo .photo-lab-progress,
+    .photo-lab.has-photo > .photo-lab-actions { margin-left:clamp(14px,2vw,32px); margin-right:clamp(14px,2vw,32px); }
     .photo-lab.has-photo .photo-lab-workspace { grid-template-columns:minmax(0,1fr) clamp(320px,25vw,430px); }
 }
 .photo-lab:fullscreen { width:100vw; height:100vh; max-width:none; margin:0; padding:10px; border:0; border-radius:0; overflow:hidden; background:#101010; }
