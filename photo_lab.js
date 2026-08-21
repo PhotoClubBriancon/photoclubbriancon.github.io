@@ -113,7 +113,7 @@
 
     root.querySelectorAll('.photo-lab-advanced').forEach(section => advancedBody?.append(section));
 
-    const worker = new Worker('/photo_lab_worker.js?v=20260820-nef-z63-2');
+    const worker = new Worker('/photo_lab_worker.js?v=20260821-zoom-denoise-1');
     const pending = new Map();
     const denoiseLabels = ['Aucun', 'Léger', 'Moyen', 'Fort'];
     const rawExtensions = new Set(['3fr', 'ari', 'arw', 'bay', 'cap', 'cine', 'cr2', 'cr3', 'crw', 'dcr', 'dng', 'erf', 'fff', 'gpr', 'iiq', 'kdc', 'mdc', 'mef', 'mos', 'mrw', 'nef', 'nrw', 'orf', 'pef', 'ptx', 'raf', 'raw', 'rw2', 'rwl', 'sr2', 'srf', 'srw', 'x3f']);
@@ -521,12 +521,12 @@
     }
 
     function drawPreviewSource() {
-        renderBitmap(originalCanvas, 1100, !cropEditing);
+        renderBitmap(originalCanvas, 1600, !cropEditing);
         processedCanvas.width = originalCanvas.width;
         processedCanvas.height = originalCanvas.height;
         processedCanvas.getContext('2d', {alpha: false}).drawImage(originalCanvas, 0, 0);
         renderRetouchOverlay();
-        updateCropOverlay();
+        updateZoom();
     }
 
     function schedulePreview() {
@@ -783,11 +783,10 @@
             cropRatio.value = 'free';
             cropEditing = false;
             zoom.value = '100';
-            updateZoom();
-            drawPreviewSource();
             workspace.style.display = 'grid';
             drop.style.display = 'none';
             root.classList.add('has-photo');
+            drawPreviewSource();
             await updatePreview();
         } catch (error) {
             sourceBitmap?.close?.();
@@ -935,16 +934,55 @@
         updateAdvancedOutputs();
     }
 
-    function updateZoom() {
+    function positionComparisonDivider() {
+        if (!sourceBitmap || !originalCanvas.width) return;
+        const stageRect = previewStage.getBoundingClientRect();
+        const canvasRect = originalCanvas.getBoundingClientRect();
+        const ratio = Number(compare.value) / 100;
+        divider.style.left = `${canvasRect.left - stageRect.left + canvasRect.width * ratio}px`;
+        divider.style.top = `${canvasRect.top - stageRect.top}px`;
+        divider.style.height = `${canvasRect.height}px`;
+        divider.style.bottom = 'auto';
+    }
+
+    function updateZoom(preserveFocus = true) {
         const scale = Number(zoom.value) / 100;
-        previewStage.style.width = `${scale * 100}%`;
-        previewStage.style.height = `${scale * 100}%`;
         zoomValue.value = scale === 1 ? 'Ajusté à l’écran' : `${zoom.value} %`;
-        if (scale <= 1) {
-            preview.scrollLeft = 0;
-            preview.scrollTop = 0;
+        if (!sourceBitmap || !originalCanvas.width || workspace.style.display === 'none') return;
+
+        const viewportWidth = Math.max(1, preview.clientWidth);
+        const viewportHeight = Math.max(1, preview.clientHeight);
+        const previewRect = preview.getBoundingClientRect();
+        const oldRect = originalCanvas.getBoundingClientRect();
+        const oldLeft = oldRect.left - previewRect.left + preview.scrollLeft;
+        const oldTop = oldRect.top - previewRect.top + preview.scrollTop;
+        const focusX = preserveFocus && oldRect.width
+            ? clamp((preview.scrollLeft + viewportWidth / 2 - oldLeft) / oldRect.width, 0, 1)
+            : 0.5;
+        const focusY = preserveFocus && oldRect.height
+            ? clamp((preview.scrollTop + viewportHeight / 2 - oldTop) / oldRect.height, 0, 1)
+            : 0.5;
+        const fitScale = Math.min(1, viewportWidth / originalCanvas.width, viewportHeight / originalCanvas.height);
+        const displayWidth = Math.max(1, Math.round(originalCanvas.width * fitScale * scale));
+        const displayHeight = Math.max(1, Math.round(originalCanvas.height * fitScale * scale));
+
+        previewStage.style.width = `${Math.max(viewportWidth, displayWidth)}px`;
+        previewStage.style.height = `${Math.max(viewportHeight, displayHeight)}px`;
+        for (const canvas of [originalCanvas, processedCanvas, retouchCanvas]) {
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
         }
-        window.requestAnimationFrame(updateCropOverlay);
+
+        window.requestAnimationFrame(() => {
+            const currentPreviewRect = preview.getBoundingClientRect();
+            const currentCanvasRect = originalCanvas.getBoundingClientRect();
+            const currentLeft = currentCanvasRect.left - currentPreviewRect.left + preview.scrollLeft;
+            const currentTop = currentCanvasRect.top - currentPreviewRect.top + preview.scrollTop;
+            preview.scrollLeft = currentLeft + currentCanvasRect.width * focusX - viewportWidth / 2;
+            preview.scrollTop = currentTop + currentCanvasRect.height * focusY - viewportHeight / 2;
+            positionComparisonDivider();
+            updateCropOverlay();
+        });
     }
 
     function updateCropOverlay() {
@@ -1042,7 +1080,7 @@
 
     function updateComparison() {
         processedCanvas.style.clipPath = `inset(0 0 0 ${compare.value}%)`;
-        divider.style.left = `${compare.value}%`;
+        positionComparisonDivider();
     }
 
     function updateComparisonFromPointer(event) {
@@ -1334,7 +1372,7 @@
         exitHorizonMode();
     });
 
-    window.addEventListener('resize', () => window.requestAnimationFrame(updateCropOverlay));
+    window.addEventListener('resize', () => window.requestAnimationFrame(() => updateZoom(false)));
     fullscreenButton?.addEventListener('click', async () => {
         try {
             if (document.fullscreenElement === root) await document.exitFullscreen();
@@ -1346,7 +1384,7 @@
     document.addEventListener('fullscreenchange', () => {
         if (!fullscreenButton) return;
         fullscreenButton.textContent = document.fullscreenElement === root ? '⤢ Quitter le plein écran' : '⛶ Plein écran';
-        window.requestAnimationFrame(updateCropOverlay);
+        window.requestAnimationFrame(() => updateZoom(false));
     });
     downloadCompetition.addEventListener('click', () => downloadResult('competition'));
     downloadFull.addEventListener('click', () => downloadResult('full'));

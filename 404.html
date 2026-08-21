@@ -349,8 +349,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-workspace { display:none; margin-top:22px; }
 .photo-lab-canvas-column,.photo-lab-sidebar { min-width:0; }
 .photo-lab-preview { position:relative; width:100%; height:clamp(240px,55vw,620px); overflow:auto; overscroll-behavior:contain; border-radius:14px; background:#080808; scrollbar-color:var(--gold) #191919; }
-.photo-lab-preview-stage { position:relative; width:100%; height:100%; min-width:100%; min-height:100%; display:grid; place-items:center; transition:width .18s ease,height .18s ease; }
-.photo-lab-preview canvas { display:block; max-width:100%; max-height:100%; width:auto; height:auto; grid-area:1/1; }
+.photo-lab-preview-stage { position:relative; width:100%; height:100%; min-width:100%; min-height:100%; display:grid; place-items:center; }
+.photo-lab-preview canvas { display:block; max-width:none; max-height:none; width:auto; height:auto; grid-area:1/1; }
 .photo-lab-preview .processed { clip-path:inset(0 0 0 50%); }
 .photo-lab-retouch-mask { z-index:5; pointer-events:none; touch-action:none; }
 .photo-lab-retouch-mask.active { pointer-events:auto; cursor:crosshair; }
