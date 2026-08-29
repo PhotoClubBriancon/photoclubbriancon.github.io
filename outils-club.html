@@ -391,6 +391,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-section[open] summary::after { transform:rotate(180deg); }
 .photo-lab-section-body { padding:0 15px 16px; }
 .photo-lab-section-note { margin:9px 0 0; color:var(--text-dim); font-size:.74rem; line-height:1.5; }
+.photo-lab-row label.photo-lab-reset-label { cursor:pointer; border-bottom:1px dotted rgba(212,175,55,.55); transition:color .16s ease,border-color .16s ease; }
+.photo-lab-row label.photo-lab-reset-label:hover,.photo-lab-row label.photo-lab-reset-label:focus-visible { color:var(--gold); border-color:var(--gold); outline:none; }
+.photo-lab-reset-all { width:calc(100% - 30px); margin:12px 15px 2px; }
 .photo-lab-fullscreen { padding:7px 11px; font-size:.76rem; }
 .photo-lab-advanced-menu > .photo-lab-section-body { padding:0; }
 .photo-lab-advanced-menu > summary { background:linear-gradient(90deg,rgba(212,175,55,.12),rgba(212,175,55,.03)); }
@@ -558,6 +561,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                     <div class="photo-lab-panel">
                         <div id="photoLabRenderPanel">
                         <div class="photo-lab-engine photo-lab-advanced"><span>Moteur de calcul</span><strong id="photoLabEngineStatus">Détection…</strong></div>
+                        <button type="button" class="btn btn-outline photo-lab-reset-all" id="photoLabResetAll">↶ Réinitialiser tous les réglages</button>
                         <details class="photo-lab-section" open>
                             <summary>Histogramme RVB</summary>
                             <div class="photo-lab-section-body">
@@ -2270,7 +2274,7 @@ function deleteGalleryImage(path) {
 }
 </script>
 
-<script src="/photo_lab.js?v=20260821-zoom-denoise-1" defer></script>
+<script src="/photo_lab.js?v=20260821-reset-controls-1" defer></script>
 
 </body>
 </html>

@@ -58,6 +58,7 @@
     const sharpening = byId('photoLabSharpening');
     const sharpeningValue = byId('photoLabSharpeningValue');
     const resetAdvanced = byId('photoLabResetAdvanced');
+    const resetAll = byId('photoLabResetAll');
     const healRadius = byId('photoLabHealRadius');
     const healRadiusValue = byId('photoLabHealRadiusValue');
     const healToggle = byId('photoLabHealToggle');
@@ -113,7 +114,7 @@
 
     root.querySelectorAll('.photo-lab-advanced').forEach(section => advancedBody?.append(section));
 
-    const worker = new Worker('/photo_lab_worker.js?v=20260821-zoom-denoise-1');
+    const worker = new Worker('/photo_lab_worker.js?v=20260821-reset-controls-1');
     const pending = new Map();
     const denoiseLabels = ['Aucun', 'Léger', 'Moyen', 'Fort'];
     const rawExtensions = new Set(['3fr', 'ari', 'arw', 'bay', 'cap', 'cine', 'cr2', 'cr3', 'crw', 'dcr', 'dng', 'erf', 'fff', 'gpr', 'iiq', 'kdc', 'mdc', 'mef', 'mos', 'mrw', 'nef', 'nrw', 'orf', 'pef', 'ptx', 'raf', 'raw', 'rw2', 'rwl', 'sr2', 'srf', 'srw', 'x3f']);
@@ -934,6 +935,22 @@
         updateAdvancedOutputs();
     }
 
+    function resetAllAdjustments() {
+        resetDevelopSettings();
+        crop = {x: 0, y: 0, width: 1, height: 1};
+        rotationDegrees = 0;
+        rotation.value = '0';
+        rotationValue.value = '0,0°';
+        cropRatio.value = 'free';
+        compare.value = '0';
+        updateComparison();
+        if (sourceBitmap) {
+            drawPreviewSource();
+            schedulePreview();
+            setStatus('Tous les réglages ont été réinitialisés.');
+        }
+    }
+
     function positionComparisonDivider() {
         if (!sourceBitmap || !originalCanvas.width) return;
         const stageRect = previewStage.getBoundingClientRect();
@@ -1153,6 +1170,27 @@
     preview.addEventListener('dblclick', () => { if (!horizonMode) { zoom.value = '100'; updateZoom(); } });
     quality.addEventListener('input', () => { qualityValue.value = `${quality.value} %`; });
     format.addEventListener('change', () => { quality.disabled = format.value === 'image/png'; });
+
+    root.querySelectorAll('.photo-lab-row label[for]').forEach(label => {
+        const control = byId(label.htmlFor);
+        if (!(control instanceof HTMLInputElement) || control.type !== 'range') return;
+        label.classList.add('photo-lab-reset-label');
+        label.tabIndex = 0;
+        label.setAttribute('role', 'button');
+        label.title = 'Cliquer pour réinitialiser ce réglage';
+        label.setAttribute('aria-label', `${label.textContent.trim()} — réinitialiser ce réglage`);
+        const resetControl = event => {
+            event.preventDefault();
+            control.value = control.defaultValue;
+            control.dispatchEvent(new Event('input', {bubbles: true}));
+        };
+        label.addEventListener('click', resetControl);
+        label.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') resetControl(event);
+        });
+    });
+
+    resetAll.addEventListener('click', resetAllAdjustments);
 
     resetAdvanced.addEventListener('click', () => {
         denoiseLuminance.value = '45'; denoiseChroma.value = '70'; denoiseDetail.value = '60';
