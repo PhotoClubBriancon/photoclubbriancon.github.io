@@ -7,7 +7,7 @@
 <meta name="author" content="Photo Club Briançonnais">
 <meta name="application-name" content="Photo Club Briançonnais">
 <meta name="theme-color" content="#111010">
-<meta name="robots" content="index,follow,max-image-preview:large"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'">
+<meta name="robots" content="index,follow,max-image-preview:large"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' blob: https://fonts.gstatic.com; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:site_name" content="Photo Club Briançonnais">
@@ -433,6 +433,46 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .photo-lab-crop-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:16px; }
 .photo-lab-crop-help { color:var(--text-dim); font-size:.78rem; line-height:1.55; margin-top:12px; }
 .photo-lab-export-note { margin-top:13px; color:var(--text-dim); font-size:.75rem; line-height:1.5; }
+.watermark-tool { max-width:1000px; margin:32px auto; padding:clamp(18px,3vw,30px); background:linear-gradient(145deg,#1b1a18,#111); border:1px solid rgba(212,175,55,.25); border-radius:18px; }
+.watermark-tool h2 { font-family:'Playfair Display',serif; color:var(--gold); margin:0 0 8px; }
+.watermark-tool p { color:var(--text-dim); line-height:1.55; }
+.watermark-layout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(285px,.8fr); gap:22px; }
+.watermark-preview-wrap { min-height:240px; display:grid; place-items:center; padding:12px; background:#080808; border:1px solid rgba(212,175,55,.2); border-radius:12px; }
+.watermark-preview-wrap canvas { display:block; max-width:100%; max-height:480px; width:auto; height:auto; }
+.watermark-files { max-height:160px; overflow:auto; padding:0; margin:10px 0; list-style:none; }
+.watermark-files li { display:flex; justify-content:space-between; gap:8px; border-bottom:1px solid rgba(255,255,255,.1); }
+.watermark-files button { min-width:0; color:var(--text); background:none; border:0; padding:6px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.watermark-files button:hover { color:var(--gold); }
+.watermark-fields { display:grid; gap:12px; }
+.watermark-fields label { display:grid; gap:5px; color:var(--text-dim); font-size:.82rem; }
+.watermark-fields input:not([type=checkbox]):not([type=radio]),.watermark-fields select { width:100%; box-sizing:border-box; padding:9px; color:var(--text); background:#171717; border:1px solid rgba(212,175,55,.3); border-radius:7px; }
+.watermark-fields input[type=color] { height:42px; padding:3px; }
+.watermark-fields input[type=range] { padding:0 !important; accent-color:var(--gold); }
+.watermark-fields input[type=file] { font-size:.75rem; }
+.watermark-checks { display:flex; flex-wrap:wrap; gap:12px; }
+.watermark-checks label { display:flex; align-items:center; gap:6px; }
+.watermark-positions { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.watermark-positions label { cursor:pointer; text-align:center; padding:8px 3px; background:#191919; border:1px solid rgba(212,175,55,.25); border-radius:6px; font-size:.74rem; }
+.watermark-positions label:has(input:checked) { color:#17120a; background:var(--gold); font-weight:700; }
+.watermark-positions input { position:absolute; opacity:0; }
+.watermark-positions label:focus-within { outline:2px solid #79d9b4; }
+.watermark-warning { font-size:.76rem; }
+.watermark-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.watermark-mode-switch label { display:block; text-align:center; padding:11px; cursor:pointer; color:var(--text); background:#191919; border:1px solid rgba(212,175,55,.35); border-radius:8px; }
+.watermark-mode-switch label:has(input:checked) { color:#17120a; background:var(--gold); font-weight:700; }
+.watermark-mode-switch input { position:absolute; opacity:0; }
+.watermark-mode-switch label:focus-within,.watermark-font-samples button:focus-visible { outline:2px solid #79d9b4; }
+.watermark-font-samples { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; max-height:290px; overflow:auto; }
+.watermark-font-samples button { display:grid; gap:3px; min-width:0; padding:10px; text-align:left; color:var(--text); background:#171717; border:1px solid rgba(212,175,55,.24); border-radius:7px; cursor:pointer; }
+.watermark-font-samples button[aria-pressed=true] { border-color:var(--gold); background:#292317; }
+.watermark-font-samples small { color:var(--text-dim); font-size:.72rem; }
+.watermark-font-samples span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:1.15rem; }
+.watermark-export-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.watermark-export-actions button { padding:12px 9px; }
+.watermark-advanced-export { display:grid; gap:10px; padding:12px; border:1px solid rgba(212,175,55,.25); border-radius:9px; }
+.watermark-status { min-height:24px; color:#79d9b4; font-size:.82rem; margin-top:12px; }
+.watermark-tool [hidden] { display:none !important; }
+@media (max-width:760px) { .watermark-layout { grid-template-columns:1fr; } }
 .photo-lab-presets { display:flex; flex-wrap:wrap; gap:8px; }
 .photo-lab-preset { border:1px solid rgba(212,175,55,.3); color:var(--text); background:#191919; padding:9px 12px; border-radius:999px; cursor:pointer; font:inherit; font-size:.82rem; }
 .photo-lab-preset.active { background:var(--gold); color:#17120a; border-color:var(--gold); font-weight:700; }
@@ -803,6 +843,100 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                 <div class="photo-lab-progress" id="photoLabProgress"><span></span></div>
                 </aside>
             </div>
+        </section>
+
+        <section class="watermark-tool" id="watermarkTool" aria-labelledby="watermarkTitle">
+            <h2 id="watermarkTitle">✍️ Signatures et filigranes</h2>
+            <p>Posez une signature identique sur une photo ou toute une série. Le traitement est local : les photos ne quittent jamais votre appareil.</p>
+            <div class="watermark-layout">
+                <div>
+                    <label for="watermarkPhotos" style="display:block;color:var(--gold);margin-bottom:7px;">Photos à signer · sélection multiple</label>
+                    <input id="watermarkPhotos" type="file" accept="image/*,.3fr,.ari,.arw,.bay,.cap,.cine,.cr2,.cr3,.crw,.dcr,.dng,.erf,.fff,.gpr,.iiq,.kdc,.mdc,.mef,.mos,.mrw,.nef,.nrw,.orf,.pef,.ptx,.raf,.raw,.rw2,.rwl,.sr2,.srf,.srw,.x3f" multiple style="width:100%;color:var(--text);">
+                    <ul class="watermark-files" id="watermarkFiles" aria-label="Photos sélectionnées"></ul>
+                    <div class="watermark-preview-wrap"><canvas id="watermarkPreview" aria-label="Aperçu de la signature sur la première photo"></canvas></div>
+                </div>
+                <div class="watermark-fields">
+                    <fieldset style="border:0;padding:0;margin:0;"><legend style="color:var(--gold);font-size:.82rem;margin-bottom:7px;">Type de signature</legend>
+                        <div class="watermark-mode-switch">
+                            <label><input type="radio" name="watermarkMode" value="logo">Logo PNG</label>
+                            <label><input type="radio" name="watermarkMode" value="text" checked>Texte</label>
+                        </div>
+                    </fieldset>
+                    <div id="watermarkTextFields" class="watermark-fields">
+                        <label for="watermarkText">Votre signature <input id="watermarkText" type="text" maxlength="120" placeholder="Votre nom ou Photo Club Briançonnais"></label>
+                        <label for="watermarkFont">Police
+                            <select id="watermarkFont">
+                                <option value="Georgia, serif">Georgia · élégante</option>
+                                <option value="Arial, sans-serif">Arial · moderne</option>
+                                <option value="Verdana, sans-serif">Verdana · lisible</option>
+                                <option value="Trebuchet MS, sans-serif">Trebuchet · expressive</option>
+                                <option value="Times New Roman, serif">Times · classique</option>
+                                <option value="Courier New, monospace">Courier · machine à écrire</option>
+                                <option value="Palatino Linotype, Palatino, serif">Palatino · raffinée</option>
+                                <option value="Garamond, Georgia, serif">Garamond · littéraire</option>
+                                <option value="Segoe UI, Arial, sans-serif">Segoe UI · sobre</option>
+                                <option value="Tahoma, Verdana, sans-serif">Tahoma · nette</option>
+                                <option value="Impact, sans-serif">Impact · affiche</option>
+                                <option value="Lucida Sans Unicode, Lucida Grande, sans-serif">Lucida · lumineuse</option>
+                                <option value="Comic Sans MS, cursive">Comic Sans · manuscrite</option>
+                                <option value="Brush Script MT, cursive">Brush Script · calligraphique</option>
+                                <option value="Century Gothic, Arial, sans-serif">Century Gothic · géométrique</option>
+                                <option value="Helvetica Neue, Helvetica, Arial, sans-serif">Helvetica · minimaliste</option>
+                                <option value="custom">Police locale importée</option>
+                            </select>
+                        </label>
+                        <div class="watermark-font-samples" id="watermarkFontSamples" role="group" aria-label="Prévisualisations des polices"></div>
+                        <p class="watermark-warning" style="margin:0;"><a href="https://www.dafont.com/fr/" target="_blank" rel="noopener noreferrer">Rechercher une police sur Dafont</a> · vérifiez sa licence avant usage.</p>
+                        <label for="watermarkFontFile">Importer une police TTF, OTF, WOFF ou WOFF2 depuis votre appareil <input id="watermarkFontFile" type="file" accept=".ttf,.otf,.woff,.woff2"></label>
+                        <div class="watermark-checks">
+                            <label><input id="watermarkBold" type="checkbox"> Gras</label>
+                            <label><input id="watermarkItalic" type="checkbox"> Italique</label>
+                            <label><input id="watermarkUnderline" type="checkbox"> Souligné</label>
+                        </div>
+                        <label for="watermarkColor">Couleur de l’écriture <input id="watermarkColor" type="color" value="#ffffff"></label>
+                        <p class="watermark-warning" style="margin:0;">Sur fond clair, essayez une teinte sombre ; sur fond sombre, une teinte claire.</p>
+                    </div>
+                    <div id="watermarkLogoFields" hidden>
+                        <label for="watermarkLogo">Logo PNG, de préférence transparent <input id="watermarkLogo" type="file" accept="image/png,.png"></label>
+                    </div>
+                    <fieldset style="border:0;padding:0;margin:0;"><legend style="color:var(--gold);font-size:.82rem;margin-bottom:7px;">Emplacement</legend>
+                        <div class="watermark-positions">
+                            <label><input type="radio" name="watermarkPosition" value="top-left">Haut gauche</label>
+                            <label><input type="radio" name="watermarkPosition" value="top-center">Haut centre</label>
+                            <label><input type="radio" name="watermarkPosition" value="top-right">Haut droite</label>
+                            <label><input type="radio" name="watermarkPosition" value="middle-left">Milieu gauche</label>
+                            <label><input type="radio" name="watermarkPosition" value="middle-center">Centre</label>
+                            <label><input type="radio" name="watermarkPosition" value="middle-right">Milieu droite</label>
+                            <label><input type="radio" name="watermarkPosition" value="bottom-left">Bas gauche</label>
+                            <label><input type="radio" name="watermarkPosition" value="bottom-center">Bas centre</label>
+                            <label><input type="radio" name="watermarkPosition" value="bottom-right" checked>Bas droite</label>
+                        </div>
+                    </fieldset>
+                    <label for="watermarkOpacity">Transparence · opacité <output id="watermarkOpacityValue">70 %</output><input id="watermarkOpacity" type="range" min="0" max="100" value="70"></label>
+                    <label for="watermarkSize">Taille de la signature / du filigrane <output id="watermarkSizeValue">5 %</output><input id="watermarkSize" type="range" min="1" max="40" step="1" value="5"><span class="watermark-warning" id="watermarkSizePixels">La taille est calculée sur le bord court de chaque photo : même proportion quelle que soit sa résolution.</span></label>
+                    <label for="watermarkInset">Marge depuis le bord <output id="watermarkInsetValue">3 %</output><input id="watermarkInset" type="range" min="0" max="20" value="3"></label>
+                    <div class="watermark-export-actions">
+                        <button type="button" class="btn btn-gold" id="watermarkExport" disabled>Exporter JPEG</button>
+                        <button type="button" class="btn" id="watermarkAdvancedToggle" aria-expanded="false" aria-controls="watermarkAdvancedPanel">Export avancé</button>
+                    </div>
+                    <div class="watermark-advanced-export" id="watermarkAdvancedPanel" hidden>
+                        <label for="watermarkAdvancedFormat">Format
+                            <select id="watermarkAdvancedFormat">
+                                <option value="png">PNG · sans perte</option>
+                                <option value="tiff">TIFF · sans compression</option>
+                                <option value="jpeg">JPEG · compatible partout</option>
+                                <option value="webp">WebP · fichier compact</option>
+                                <option value="jxl" disabled>JPEG XL · vérification du navigateur…</option>
+                            </select>
+                        </label>
+                        <label for="watermarkQuality" id="watermarkQualityRow" hidden>Qualité JPEG / WebP <output id="watermarkQualityValue">95 %</output><input id="watermarkQuality" type="range" min="50" max="100" value="95"></label>
+                        <button type="button" class="btn btn-gold" id="watermarkAdvancedExport" disabled>Exporter dans ce format</button>
+                        <p class="watermark-warning" id="watermarkFormatNote" style="margin:0;">PNG conserve les pixels issus du décodage, sans compression avec perte.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="watermark-status" id="watermarkStatus" role="status" aria-live="polite">Choisissez une ou plusieurs photos.</div>
+            <p class="watermark-warning">Une photo donne un fichier au format choisi ; une série donne un ZIP sans recompression. Les dimensions et les originaux restent intacts. JPEG et WebP appliquent une compression avec perte ; PNG et TIFF n’en appliquent pas. Le décodage peut convertir les profils couleur ICC et ne conserve pas toutes les métadonnées : une identité binaire avec un JPEG ou un RAW d’origine est impossible après ajout d’une signature. Les RAW non décodables localement peuvent utiliser leur aperçu JPEG intégré.</p>
         </section>
 
         <div class="block" style="max-width:800px;margin:0 auto 32px;">
@@ -2274,7 +2408,8 @@ function deleteGalleryImage(path) {
 }
 </script>
 
-<script src="/photo_lab.js?v=20260821-reset-controls-1" defer></script>
+<script src="/photo_lab.js?v=20260915-watermark-1" defer></script>
+<script src="/watermark_tool.js?v=20260915-design-4" defer></script>
 
 </body>
 </html>

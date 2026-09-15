@@ -680,7 +680,8 @@
         return await decodeBestEmbeddedJpeg(bytes, candidates);
     }
 
-    async function decodeRaw(file) {
+    async function decodeRaw(file, feedback = {setStatus, setProgress}) {
+        const {setStatus: reportStatus, setProgress: reportProgress} = feedback;
         const rawEngineAvailable = window.crossOriginIsolated && typeof window.SharedArrayBuffer !== 'undefined' && typeof window.WebAssembly !== 'undefined';
         let decoder = null;
         let rawError = null;
@@ -688,20 +689,20 @@
         const tiffInfo = inspectTiffRaw(bytes);
         try {
             if (tiffInfo?.unsupportedNikonHighEfficiency) {
-                setStatus(`Nikon ${tiffInfo.model || 'NEF'} haute efficacité : ouverture de l’aperçu pleine définition…`);
-                setProgress(12);
+                reportStatus(`Nikon ${tiffInfo.model || 'NEF'} haute efficacité : ouverture de l’aperçu pleine définition…`);
+                reportProgress(12);
                 const embeddedBitmap = await extractEmbeddedJpeg(file, bytes, tiffInfo);
                 if (!embeddedBitmap) throw new Error('Aucun aperçu JPEG pleine définition décodable dans ce NEF.');
                 sourceDecodeNotice = `Nikon ${tiffInfo.model || 'Z6 III'} HE/HE* · aperçu JPEG pleine définition`;
                 return embeddedBitmap;
             }
             if (!rawEngineAvailable) throw new Error('Moteur RAW WebAssembly indisponible dans ce navigateur.');
-            setStatus('Chargement du décodeur RAW local…');
-            setProgress(4);
+            reportStatus('Chargement du décodeur RAW local…');
+            reportProgress(4);
             const {default: LibRaw} = await import('/vendor/libraw/index.js');
             decoder = new LibRaw();
-            setStatus('Développement du fichier RAW…');
-            setProgress(12);
+            reportStatus('Développement du fichier RAW…');
+            reportProgress(12);
             await decoder.open(bytes.slice(), {
                 useCameraWb: true,
                 useCameraMatrix: 1,
@@ -744,8 +745,8 @@
             return await createImageBitmap(canvas);
         } catch (error) {
             rawError = rawError || error;
-            setStatus('Compression RAW non décodable : recherche de l’aperçu intégré…');
-            setProgress(16);
+            reportStatus('Compression RAW non décodable : recherche de l’aperçu intégré…');
+            reportProgress(16);
             const embeddedBitmap = await extractEmbeddedJpeg(file, bytes, tiffInfo).catch(() => null);
             if (embeddedBitmap) {
                 sourceDecodeNotice = 'compatibilité RAW : aperçu JPEG intégré';
@@ -756,6 +757,16 @@
             decoder?.dispose();
         }
     }
+
+    // Shared by the separate watermark tool on this page; no image data is sent away.
+    window.PhotoClubRaw = {
+        isRawFile,
+        decode: async (file, feedback) => {
+            sourceDecodeNotice = '';
+            const bitmap = await decodeRaw(file, feedback);
+            return {bitmap, notice: sourceDecodeNotice};
+        },
+    };
 
     async function openFile(file) {
         if (!file) return;
