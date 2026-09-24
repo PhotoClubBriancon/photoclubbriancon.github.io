@@ -393,9 +393,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 @media (max-width:900px) { .dashboard-health { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .analytics-fields { grid-template-columns:1fr; } .analytics-card-value { font-size:1.55rem; } .analytics-panel { padding:15px; } }
 @media (max-width:520px) { .dashboard-health { grid-template-columns:1fr; } }
+.protect-public-photos img { -webkit-user-drag:none; -webkit-touch-callout:none; user-select:none; }
 </style>
 </head>
-<body>
+<body class="protect-public-photos">
 
 <header class="header">
     <a href="index.html" class="header-logo">
@@ -1876,6 +1877,24 @@ function deleteGalleryImage(path) {
         }
     });
 }
+</script>
+
+<script>
+(() => {
+    const protectedPhotoSelector = 'img, picture, .gallery-item';
+    const concernsPhoto = target => target instanceof Element && target.closest(protectedPhotoSelector) !== null;
+
+    document.querySelectorAll('img').forEach(image => {
+        image.draggable = false;
+        image.setAttribute('draggable', 'false');
+    });
+    document.addEventListener('contextmenu', event => {
+        if (concernsPhoto(event.target)) event.preventDefault();
+    }, true);
+    document.addEventListener('dragstart', event => {
+        if (concernsPhoto(event.target)) event.preventDefault();
+    }, true);
+})();
 </script>
 
 
