@@ -99,6 +99,7 @@
     const fitButton = byId('photoLabFit');
     const originalButton = byId('photoLabShowOriginal');
     const previewQuality = byId('photoLabPreviewQuality');
+    if (window.matchMedia('(pointer:coarse) and (max-width:960px)').matches) previewQuality.value = '1200';
     const tonalLimits = byId('photoLabTonalLimits');
     const cropRatio = byId('photoLabCropRatio');
     const rotation = byId('photoLabRotation');
@@ -138,6 +139,8 @@
     let fileGeneration = 0;
     let panMode = false;
     let panDrag = null;
+    const panTouches = new Map();
+    let pinchStart = null;
     let heldComparison = null;
     let geometryTimer = 0;
     let gridTimer = 0;
@@ -337,6 +340,7 @@
 
     function setLocalMaskMode(enabled) {
         localMaskMode = enabled;
+        if (enabled) setPanMode(false);
         if (enabled) setRetouchMode(false);
         retouchCanvas.classList.toggle('active', enabled || retouchMode);
         localToggle.setAttribute('aria-pressed', String(enabled));
@@ -347,6 +351,7 @@
 
     function setRetouchMode(enabled) {
         retouchMode = enabled;
+        if (enabled) setPanMode(false);
         if (enabled) setLocalMaskMode(false);
         retouchCanvas.classList.toggle('active', enabled || localMaskMode);
         healToggle.setAttribute('aria-pressed', String(enabled));
@@ -1099,6 +1104,7 @@
 
     function setCropEditing(enabled) {
         cropEditing = enabled;
+        if (enabled) { setPanMode(false); setLocalMaskMode(false); }
         if (enabled) setRetouchMode(false);
         preview.classList.toggle('crop-mode', enabled);
         exitHorizonMode();
@@ -1123,6 +1129,7 @@
         previewRequested = false;
         releaseOriginal();
         panDrag = null;
+        setPanMode(false);
         sourceBitmap?.close?.();
         sourceBitmap = null;
         sourceFile = null;
@@ -1167,9 +1174,20 @@
         if (!sourceBitmap || horizonMode || cropEditing || retouchMode || localMaskMode || heldComparison !== null || event.button !== 0) return;
         const rect = originalCanvas.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
-        event.preventDefault();
+        // Touch gestures are governed by touch-action; do not suppress later tap clicks.
+        if (event.pointerType !== 'touch') event.preventDefault();
         if (panMode) {
-            panDrag = {id: event.pointerId, x: event.clientX, y: event.clientY, left: preview.scrollLeft, top: preview.scrollTop};
+            if (event.pointerType === 'touch') {
+                panTouches.set(event.pointerId, {x:event.clientX, y:event.clientY});
+                if (panTouches.size === 2) {
+                    const [a,b] = [...panTouches.values()];
+                    pinchStart = {distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)), zoom:Number(zoom.value)};
+                    panDrag = null;
+                }
+            }
+            if (panTouches.size < 2) {
+                panDrag = {id: event.pointerId, x: event.clientX, y: event.clientY, left: preview.scrollLeft, top: preview.scrollTop};
+            }
             preview.style.cursor = 'grabbing';
             preview.setPointerCapture?.(event.pointerId);
             return;
@@ -1179,6 +1197,15 @@
         updateComparisonFromPointer(event);
     });
     preview.addEventListener('pointermove', event => {
+        if (panTouches.has(event.pointerId)) {
+            panTouches.set(event.pointerId, {x:event.clientX,y:event.clientY});
+            if (pinchStart && panTouches.size === 2) {
+                const [a,b] = [...panTouches.values()];
+                zoom.value = String(clamp(Math.round(pinchStart.zoom * Math.hypot(a.x-b.x,a.y-b.y) / pinchStart.distance / 10)*10,50,400));
+                updateZoom();
+                return;
+            }
+        }
         if (panDrag && panDrag.id === event.pointerId) {
             preview.scrollLeft = panDrag.left - (event.clientX - panDrag.x);
             preview.scrollTop = panDrag.top - (event.clientY - panDrag.y);
@@ -1186,6 +1213,8 @@
         if (compareDragging) updateComparisonFromPointer(event);
     });
     const finishComparison = event => {
+        panTouches.delete(event.pointerId);
+        if (panTouches.size < 2) pinchStart = null;
         if (panDrag && panDrag.id === event.pointerId) {
             panDrag = null;
             preview.style.cursor = panMode ? 'grab' : '';
@@ -1198,14 +1227,19 @@
     preview.addEventListener('pointerup', finishComparison);
     preview.addEventListener('pointercancel', finishComparison);
     preview.addEventListener('lostpointercapture', finishComparison);
-    panButton.addEventListener('click', () => {
-        panMode = !panMode;
+    function setPanMode(enabled) {
+        panMode = enabled;
+        panTouches.clear(); pinchStart = null; panDrag = null;
         panButton.setAttribute('aria-pressed', String(panMode));
         panButton.classList.toggle('btn-gold', panMode);
         preview.style.cursor = panMode ? 'grab' : '';
         preview.style.touchAction = panMode ? 'none' : '';
-        if (panMode) { setRetouchMode(false); setLocalMaskMode(false); }
-    });
+        if (panMode) {
+            setRetouchMode(false); setLocalMaskMode(false); exitHorizonMode();
+            if (cropEditing) setCropEditing(false);
+        }
+    }
+    panButton.addEventListener('click', () => setPanMode(!panMode));
     fitButton.addEventListener('click', () => { zoom.value = '100'; updateZoom(false); });
     previewQuality.addEventListener('change', () => {
         if (!sourceBitmap) return;
@@ -1337,6 +1371,7 @@
     localClear.addEventListener('click', () => { localMaskActions = []; updateLocalMaskUi(); schedulePreview(); });
 
     retouchCanvas.addEventListener('pointerdown', event => {
+        if (!event.isPrimary) return;
         if ((!retouchMode && !localMaskMode) || !sourceBitmap || event.button !== 0) return;
         event.preventDefault();
         if (retouchMode) {
@@ -1351,11 +1386,13 @@
         else { appendLocalMaskPoint(event); updateLocalMaskUi(); }
     });
     retouchCanvas.addEventListener('pointermove', event => {
+        if (!event.isPrimary) return;
         if (!activeRetouchAction && !activeLocalMaskAction) return;
         event.preventDefault();
         if (activeRetouchAction) appendRetouchPoint(event); else appendLocalMaskPoint(event);
     });
     const finishRetouchStroke = event => {
+        if (!event.isPrimary) return;
         if (!activeRetouchAction && !activeLocalMaskAction) return;
         const finishedHealing = Boolean(activeRetouchAction?.length);
         activeRetouchAction = null;
@@ -1437,6 +1474,7 @@
     });
 
     cropOverlay.addEventListener('pointerdown', event => {
+        if (!event.isPrimary) return;
         if (horizonMode) return;
         event.preventDefault();
         clearRetouches(true);
@@ -1449,6 +1487,7 @@
         showGrid();
     });
     cropOverlay.addEventListener('pointermove', event => {
+        if (!event.isPrimary) return;
         if (!cropDrag) return;
         const point = normalizedPointer(event);
         const dx = point.x - cropDrag.start.x;
@@ -1475,11 +1514,12 @@
         showGrid();
         updateCropOverlay();
     });
-    const finishCropDrag = () => { cropDrag = null; };
+    const finishCropDrag = event => { if (event.isPrimary) cropDrag = null; };
     cropOverlay.addEventListener('pointerup', finishCropDrag);
     cropOverlay.addEventListener('pointercancel', finishCropDrag);
 
     horizonButton.addEventListener('click', () => {
+        setPanMode(false); setLocalMaskMode(false);
         horizonMode = !horizonMode;
         if (horizonMode) setRetouchMode(false);
         preview.classList.toggle('horizon-mode', horizonMode);
@@ -1491,6 +1531,7 @@
     });
     preview.addEventListener('pointerdown', event => {
         if (!horizonMode) return;
+        if (!event.isPrimary) return;
         event.preventDefault();
         horizonStart = {x: event.clientX, y: event.clientY};
         const stageRect = previewStage.getBoundingClientRect();
@@ -1502,6 +1543,7 @@
     });
     preview.addEventListener('pointermove', event => {
         if (!horizonMode || !horizonStart) return;
+        if (!event.isPrimary) return;
         const dx = event.clientX - horizonStart.x;
         const dy = event.clientY - horizonStart.y;
         horizonLine.style.width = `${Math.hypot(dx, dy)}px`;
@@ -1510,6 +1552,7 @@
     });
     preview.addEventListener('pointerup', event => {
         if (!horizonMode || !horizonStart) return;
+        if (!event.isPrimary) return;
         const dx = event.clientX - horizonStart.x;
         const dy = event.clientY - horizonStart.y;
         if (Math.hypot(dx, dy) >= 20) {
@@ -1523,6 +1566,7 @@
         }
         exitHorizonMode();
     });
+    preview.addEventListener('pointercancel', () => { if (horizonMode) exitHorizonMode(); });
 
     window.addEventListener('resize', () => window.requestAnimationFrame(() => updateZoom(false)));
     fullscreenButton?.addEventListener('click', async () => {

@@ -388,12 +388,49 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .dashboard-sync-message { font-family:'Playfair Display',serif; color:var(--gold); font-size:1.22rem; margin-bottom:5px; }
 .dashboard-updated { color:var(--text-dim); font-size:.8rem; }
 @media (max-width:900px) { .analytics-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } .analytics-grid { grid-template-columns:1fr; } }
-@media (max-width:960px) { .photo-lab-workspace { grid-template-columns:1fr; } .photo-lab-canvas-column { position:static; } .photo-lab-sidebar { max-height:none; overflow:visible; } .photo-lab-preview { height:clamp(260px,56vh,620px); min-height:0; } }
+@media (max-width:960px) { .photo-lab-fullscreen { display:none; } .photo-lab-workspace { grid-template-columns:1fr; } .photo-lab-canvas-column { position:static; } .photo-lab-sidebar { max-height:none; overflow:visible; } .photo-lab-preview { height:clamp(260px,56vh,620px); min-height:0; } }
 @media (max-width:760px) { .photo-lab-controls { grid-template-columns:1fr; } .photo-lab-preview { height:clamp(220px,52vh,460px); } .photo-lab-fullscreen { display:none; } }
 @media (max-width:900px) { .dashboard-health { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:600px) { .analytics-fields { grid-template-columns:1fr; } .analytics-card-value { font-size:1.55rem; } .analytics-panel { padding:15px; } }
 @media (max-width:520px) { .dashboard-health { grid-template-columns:1fr; } }
 .protect-public-photos img { -webkit-user-drag:none; -webkit-touch-callout:none; user-select:none; }
+/* Keep these overrides after the desktop rules: gallery controls must stay on screen. */
+@media (max-width:768px) {
+    .nav-menu { max-height:calc(100svh - 70px); overflow-y:auto; }
+    .nav-menu a,.mobile-menu-btn { min-height:44px; min-width:44px; }
+    .header-logo { min-width:0; }
+    .header-logo img { flex-shrink:0; }
+    .block { overflow-wrap:anywhere; }
+    .block img,.block video,.block iframe { max-width:100%; }
+    .photo-lab.has-photo { margin-inline:-16px; padding:10px; border-radius:0; }
+    .photo-lab-select,.watermark-fields input,.watermark-fields select { font-size:16px; }
+}
+@media (max-width:960px), (max-height:500px) {
+    .lightbox { padding:60px 12px; }
+    .lightbox-content { max-width:100%; max-height:calc(100svh - 120px); }
+    .lightbox-content img { display:block; max-height:calc(100svh - 170px); margin:auto; touch-action:pan-y pinch-zoom; }
+    .lightbox-close { position:fixed; top:max(8px,env(safe-area-inset-top)); right:max(8px,env(safe-area-inset-right)); width:48px; height:48px; background:#171717; border-radius:50%; }
+    .lightbox-nav { position:fixed; width:44px; height:48px; padding:0; font-size:26px; }
+    .lightbox-nav.prev { left:max(8px,env(safe-area-inset-left)); }
+    .lightbox-nav.next { right:max(8px,env(safe-area-inset-right)); }
+    .lightbox-counter { bottom:-25px; color:#ddd; }
+    #lightbox-caption { max-height:50px; overflow:auto; }
+}
+@media (pointer:coarse) {
+    button,summary,.btn { touch-action:manipulation; }
+    .photo-lab button,.photo-lab summary,.watermark-tool button,.watermark-positions label { min-height:44px; }
+    .photo-lab input[type=range],.watermark-tool input[type=range] { min-height:44px; touch-action:pan-y; }
+    .photo-lab-crop-handle::after { content:''; position:absolute; inset:-14px; }
+    .photo-lab-preview { touch-action:pan-y pinch-zoom; }
+    .photo-lab-preview.horizon-mode { touch-action:none; }
+    #photoLabShowOriginal { touch-action:none; user-select:none; -webkit-touch-callout:none; }
+}
+@media (max-width:960px) and (min-height:600px) {
+    .photo-lab-canvas-column { display:contents; }
+    .photo-lab-preview { position:sticky; top:70px; z-index:20; height:clamp(180px,32svh,300px); min-height:0; border:1px solid #393329; border-radius:8px; }
+    .photo-lab-sidebar { scroll-margin-top:calc(70px + clamp(180px,32svh,300px) + 12px); }
+    .photo-lab-sidebar input,.photo-lab-sidebar button,.photo-lab-sidebar summary,.photo-lab-sidebar select { scroll-margin-top:calc(70px + clamp(180px,32svh,300px) + 12px); }
+}
 </style>
 </head>
 <body class="protect-public-photos">
@@ -893,7 +930,10 @@ function removeFromGallery(path, sourceElement = null) {
     });
 }
 
+let lightboxOpener = null;
 function openLightbox(index) {
+    if (!galleryImages.length) return;
+    lightboxOpener = document.activeElement;
     currentImageIndex = index;
     const img = document.getElementById('lightbox-img');
     img.src = galleryImages[currentImageIndex];
@@ -903,11 +943,13 @@ function openLightbox(index) {
     document.getElementById('lightbox-counter').textContent = (currentImageIndex + 1) + ' / ' + galleryImages.length;
     document.getElementById('lightbox').classList.add('active');
     document.body.style.overflow = 'hidden';
+    document.querySelector('.lightbox-close').focus({preventScroll:true});
 }
 
 function closeLightbox() {
     document.getElementById('lightbox').classList.remove('active');
     document.body.style.overflow = '';
+    lightboxOpener?.focus({preventScroll:true});
 }
 
 function prevImage(e) {
@@ -936,7 +978,34 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') prevImage(e);
     if (e.key === 'ArrowRight') nextImage(e);
+    if (e.key === 'Tab') {
+        const buttons = [...lightbox.querySelectorAll('button')];
+        const index = buttons.indexOf(document.activeElement);
+        e.preventDefault();
+        buttons[(index + (e.shiftKey ? buttons.length - 1 : 1)) % buttons.length].focus();
+    }
 });
+
+// Horizontal swipe changes photos; vertical scrolling and browser pinch zoom remain native.
+(() => {
+    const image = document.getElementById('lightbox-img');
+    if (!image) return;
+    let start = null;
+    image.addEventListener('pointerdown', e => {
+        if (!e.isPrimary || (window.visualViewport?.scale || 1) > 1.05) { start=null; return; }
+        start = {id:e.pointerId,x:e.clientX,y:e.clientY};
+        image.setPointerCapture?.(e.pointerId);
+    });
+    image.addEventListener('pointercancel', () => { start=null; });
+    image.addEventListener('pointerup', e => {
+        if (!start || start.id !== e.pointerId) return;
+        const dx=e.clientX-start.x,dy=e.clientY-start.y;
+        start=null;
+        if (Math.abs(dx) >= 55 && Math.abs(dx) > Math.abs(dy)*1.5 && (window.visualViewport?.scale || 1) <= 1.05) {
+            if (dx<0) nextImage(e); else prevImage(e);
+        }
+    });
+})();
 
 </script>
 
