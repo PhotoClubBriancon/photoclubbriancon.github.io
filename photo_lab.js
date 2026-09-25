@@ -95,6 +95,11 @@
     const localCount = byId('photoLabLocalCount');
     const zoom = byId('photoLabZoom');
     const zoomValue = byId('photoLabZoomValue');
+    const panButton = byId('photoLabPan');
+    const fitButton = byId('photoLabFit');
+    const originalButton = byId('photoLabShowOriginal');
+    const previewQuality = byId('photoLabPreviewQuality');
+    const tonalLimits = byId('photoLabTonalLimits');
     const cropRatio = byId('photoLabCropRatio');
     const rotation = byId('photoLabRotation');
     const rotationValue = byId('photoLabRotationValue');
@@ -130,6 +135,10 @@
     let previewTimer = 0;
     let previewRunning = false;
     let previewRequested = false;
+    let fileGeneration = 0;
+    let panMode = false;
+    let panDrag = null;
+    let heldComparison = null;
     let geometryTimer = 0;
     let gridTimer = 0;
     let cropEditing = false;
@@ -150,12 +159,7 @@
 
     const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 
-    try {
-        const webgl2 = Boolean(document.createElement('canvas').getContext('webgl2'));
-        engineStatus.textContent = navigator.gpu ? 'WebGPU disponible · WebGL2 actif' : (webgl2 ? 'WebGL2 actif · repli CPU prêt' : 'CPU compatible · mode universel');
-    } catch (_) {
-        engineStatus.textContent = 'CPU compatible · mode universel';
-    }
+    engineStatus.textContent = 'Moteur local · en attente du premier calcul';
 
     function setStatus(message, error = false) {
         status.textContent = message;
@@ -463,35 +467,40 @@
             return;
         }
         previewRunning = true;
-        const generation = ++previewGeneration;
+        const generation = previewGeneration;
         setStatus('Calcul de l’aperçu…');
         setProgress(8);
         try {
             const context = originalCanvas.getContext('2d', {alpha: false, willReadFrequently: true});
             const original = context.getImageData(0, 0, originalCanvas.width, originalCanvas.height);
-            const result = await processImageData(original, value => setProgress(value));
-            if (generation !== previewGeneration) return;
+            const result = await processImageData(original, value => {
+                if (generation === previewGeneration) setProgress(value);
+            });
+            if (generation !== previewGeneration || !sourceBitmap) return;
             processedCanvas.width = result.width;
             processedCanvas.height = result.height;
             processedCanvas.getContext('2d', {alpha: false}).putImageData(result, 0, 0);
             drawHistogram(result.photoLabHistogram);
-            if (result.photoLabAccelerator === 'webgl2') engineStatus.textContent = 'WebGL2 actif · repli CPU prêt';
+            engineStatus.textContent = result.photoLabNeutral ? 'Original · aucun traitement nécessaire'
+                : result.photoLabAccelerator === 'webgl2' ? 'Calcul graphique WebGL2' : 'Calcul sur le processeur';
             updateCropOverlay();
             renderRetouchOverlay();
             setProgress(100);
-            window.setTimeout(() => setProgress(0, false), 300);
+            window.setTimeout(() => { if (generation === previewGeneration) setProgress(0, false); }, 300);
             const decodeSuffix = sourceDecodeNotice ? ` · ${sourceDecodeNotice}` : '';
             setStatus((result.photoLabNeutral
                 ? `Original intact · aucune correction · ${sourceBitmap.width} × ${sourceBitmap.height} px`
-                : `Aperçu traité · source ${sourceBitmap.width} × ${sourceBitmap.height} px`) + decodeSuffix);
+                : `Aperçu ${result.width} × ${result.height} px · source ${sourceBitmap.width} × ${sourceBitmap.height} px`) + decodeSuffix);
         } catch (error) {
+            if (generation !== previewGeneration) return;
             setProgress(0, false);
             setStatus(error.message || 'Aperçu impossible.', true);
         } finally {
             previewRunning = false;
             if (previewRequested) {
                 previewRequested = false;
-                window.setTimeout(updatePreview, 16);
+                window.clearTimeout(previewTimer);
+                previewTimer = window.setTimeout(updatePreview, 16);
             }
         }
     }
@@ -519,10 +528,15 @@
         };
         draw(histogram.luma, '#e8e8e8', 0.65);
         draw(histogram.red, '#ff5b56'); draw(histogram.green, '#52d68a'); draw(histogram.blue, '#5795ff');
+        const total = histogram.luma.reduce((sum, count) => sum + count, 0) || 1;
+        const percentage = count => (count * 100 / total).toLocaleString('fr-FR', {maximumFractionDigits: 2});
+        tonalLimits.textContent = `Noirs à 0 : ${percentage(histogram.luma[0])} % · Blancs à 255 : ${percentage(histogram.luma[255])} % de l’aperçu`;
     }
 
     function drawPreviewSource() {
-        renderBitmap(originalCanvas, 1600, !cropEditing);
+        previewGeneration++;
+        if (!sourceBitmap) return;
+        renderBitmap(originalCanvas, Number(previewQuality.value), !cropEditing);
         processedCanvas.width = originalCanvas.width;
         processedCanvas.height = originalCanvas.height;
         processedCanvas.getContext('2d', {alpha: false}).drawImage(originalCanvas, 0, 0);
@@ -531,11 +545,13 @@
     }
 
     function schedulePreview() {
+        previewGeneration++;
         window.clearTimeout(previewTimer);
         previewTimer = window.setTimeout(updatePreview, 36);
     }
 
     function scheduleGeometryPreview() {
+        previewGeneration++;
         window.clearTimeout(geometryTimer);
         geometryTimer = window.setTimeout(async () => {
             drawPreviewSource();
@@ -681,7 +697,7 @@
     }
 
     async function decodeRaw(file, feedback = {setStatus, setProgress}) {
-        const {setStatus: reportStatus, setProgress: reportProgress} = feedback;
+        const {setStatus: reportStatus = setStatus, setProgress: reportProgress = setProgress, setNotice: reportNotice = () => {}} = feedback;
         const rawEngineAvailable = window.crossOriginIsolated && typeof window.SharedArrayBuffer !== 'undefined' && typeof window.WebAssembly !== 'undefined';
         let decoder = null;
         let rawError = null;
@@ -693,7 +709,7 @@
                 reportProgress(12);
                 const embeddedBitmap = await extractEmbeddedJpeg(file, bytes, tiffInfo);
                 if (!embeddedBitmap) throw new Error('Aucun aperçu JPEG pleine définition décodable dans ce NEF.');
-                sourceDecodeNotice = `Nikon ${tiffInfo.model || 'Z6 III'} HE/HE* · aperçu JPEG pleine définition`;
+                reportNotice(`Nikon ${tiffInfo.model || 'Z6 III'} HE/HE* · aperçu JPEG pleine définition`);
                 return embeddedBitmap;
             }
             if (!rawEngineAvailable) throw new Error('Moteur RAW WebAssembly indisponible dans ce navigateur.');
@@ -719,7 +735,7 @@
                 const thumbnail = await decoder.thumbnailData().catch(() => null);
                 const thumbnailBitmap = await bitmapFromRawThumbnail(thumbnail).catch(() => null);
                 if (thumbnailBitmap) {
-                    sourceDecodeNotice = 'compatibilité NEF HE/HE* : aperçu JPEG intégré';
+                    reportNotice('compatibilité NEF HE/HE* : aperçu JPEG intégré');
                     return thumbnailBitmap;
                 }
                 throw error;
@@ -749,7 +765,7 @@
             reportProgress(16);
             const embeddedBitmap = await extractEmbeddedJpeg(file, bytes, tiffInfo).catch(() => null);
             if (embeddedBitmap) {
-                sourceDecodeNotice = 'compatibilité RAW : aperçu JPEG intégré';
+                reportNotice('compatibilité RAW : aperçu JPEG intégré');
                 return embeddedBitmap;
             }
             throw new Error(`Ce RAW n’a pas pu être ouvert localement. Pour un Nikon Z6 III, choisissez NEF « Compression sans perte » plutôt que HE/HE*. (${rawError?.message || 'décodeur indisponible'})`);
@@ -762,9 +778,9 @@
     window.PhotoClubRaw = {
         isRawFile,
         decode: async (file, feedback) => {
-            sourceDecodeNotice = '';
-            const bitmap = await decodeRaw(file, feedback);
-            return {bitmap, notice: sourceDecodeNotice};
+            let notice = '';
+            const bitmap = await decodeRaw(file, {...feedback, setNotice: value => { notice = value; }});
+            return {bitmap, notice};
         },
     };
 
@@ -780,13 +796,30 @@
             setStatus(`Le fichier dépasse la limite de ${raw ? 220 : 60} Mo.`, true);
             return;
         }
+        const opening = ++fileGeneration;
+        previewGeneration++;
+        window.clearTimeout(previewTimer);
+        window.clearTimeout(geometryTimer);
+        previewRequested = false;
         setStatus(raw ? 'Ouverture du fichier RAW…' : 'Ouverture de la photographie…');
+        let decoded = null;
         try {
+            let decodeNotice = '';
+            decoded = raw ? await decodeRaw(file, {
+                setStatus: (...args) => { if (opening === fileGeneration) setStatus(...args); },
+                setProgress: (...args) => { if (opening === fileGeneration) setProgress(...args); },
+                setNotice: value => { decodeNotice = value; },
+            }) : await createImageBitmap(file, {imageOrientation: 'from-image'});
+            if (opening !== fileGeneration) { decoded.close?.(); return; }
+            if (decoded.width * decoded.height > 60000000) throw new Error('La photographie dépasse la limite de 60 mégapixels.');
             sourceBitmap?.close?.();
-            sourceDecodeNotice = '';
-            sourceBitmap = raw ? await decodeRaw(file) : await createImageBitmap(file, {imageOrientation: 'from-image'});
-            if (sourceBitmap.width * sourceBitmap.height > 60000000) throw new Error('La photographie dépasse la limite de 60 mégapixels.');
+            sourceBitmap = decoded;
+            decoded = null;
             sourceFile = file;
+            sourceDecodeNotice = decodeNotice;
+            releaseOriginal();
+            compare.value = '0';
+            updateComparison();
             resetDevelopSettings();
             crop = {x: 0, y: 0, width: 1, height: 1};
             rotationDegrees = 0;
@@ -801,9 +834,8 @@
             drawPreviewSource();
             await updatePreview();
         } catch (error) {
-            sourceBitmap?.close?.();
-            sourceBitmap = null;
-            sourceFile = null;
+            decoded?.close?.();
+            if (opening !== fileGeneration) return;
             setProgress(0, false);
             setStatus(error.message || 'Impossible de lire cette photographie.', true);
         }
@@ -828,9 +860,9 @@
         return canvas;
     }
 
-    async function competitionBlob(sourceCanvas) {
+    async function competitionBlob(sourceCanvas, selectedQuality) {
         let canvas = sourceCanvas;
-        const upperQuality = Math.min(0.96, Number(quality.value) / 100);
+        const upperQuality = Math.min(0.96, selectedQuality / 100);
         for (let sizeAttempt = 0; sizeAttempt < 6; sizeAttempt++) {
             let low = 0.42, high = upperQuality, best = null;
             for (let attempt = 0; attempt < 8; attempt++) {
@@ -853,7 +885,11 @@
     }
 
     async function downloadResult(mode) {
-        if (!sourceBitmap || !sourceFile) return;
+        if (!sourceBitmap || !sourceFile || downloadFull.disabled) return;
+        const exportedFile = sourceFile;
+        const exportedPreset = preset;
+        const exportedFormat = format.value;
+        const exportedQuality = Number(quality.value);
         const competition = mode === 'competition';
         downloadCompetition.disabled = true;
         downloadFull.disabled = true;
@@ -870,20 +906,21 @@
 
             let blob, mime;
             if (competition) {
-                const encoded = await competitionBlob(canvas);
+                const encoded = await competitionBlob(canvas, exportedQuality);
                 blob = encoded.blob;
                 canvas = encoded.canvas;
                 mime = 'image/jpeg';
             } else {
-                mime = format.value;
-                blob = await canvasBlob(canvas, mime, Number(quality.value) / 100);
+                mime = exportedFormat;
+                blob = await canvasBlob(canvas, mime, exportedQuality / 100);
             }
             if (!blob) throw new Error('Votre navigateur ne peut pas créer ce format.');
+            if (blob.type !== mime) throw new Error('Ce navigateur ne sait pas exporter le format demandé. Choisissez JPEG ou PNG.');
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement('a');
-            const baseName = sourceFile.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'photo';
+            const baseName = exportedFile.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'photo';
             anchor.href = url;
-            anchor.download = `${baseName}-${suffixes[preset] || 'traitee'}-${competition ? 'concours' : 'pleine-taille'}-${canvas.width}x${canvas.height}.${outputExtension(mime)}`;
+            anchor.download = `${baseName}-${suffixes[exportedPreset] || 'traitee'}-${competition ? 'concours' : 'pleine-taille'}-${canvas.width}x${canvas.height}.${outputExtension(mime)}`;
             anchor.click();
             window.setTimeout(() => URL.revokeObjectURL(url), 1500);
             setProgress(100);
@@ -1079,6 +1116,13 @@
     }
 
     function clearFile() {
+        fileGeneration++;
+        previewGeneration++;
+        window.clearTimeout(previewTimer);
+        window.clearTimeout(geometryTimer);
+        previewRequested = false;
+        releaseOriginal();
+        panDrag = null;
         sourceBitmap?.close?.();
         sourceBitmap = null;
         sourceFile = null;
@@ -1120,24 +1164,83 @@
 
     compare.addEventListener('input', updateComparison);
     preview.addEventListener('pointerdown', event => {
-        if (!sourceBitmap || horizonMode || cropEditing || retouchMode || localMaskMode || event.button !== 0) return;
+        if (!sourceBitmap || horizonMode || cropEditing || retouchMode || localMaskMode || heldComparison !== null || event.button !== 0) return;
         const rect = originalCanvas.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
         event.preventDefault();
+        if (panMode) {
+            panDrag = {id: event.pointerId, x: event.clientX, y: event.clientY, left: preview.scrollLeft, top: preview.scrollTop};
+            preview.style.cursor = 'grabbing';
+            preview.setPointerCapture?.(event.pointerId);
+            return;
+        }
         compareDragging = true;
         preview.setPointerCapture?.(event.pointerId);
         updateComparisonFromPointer(event);
     });
     preview.addEventListener('pointermove', event => {
+        if (panDrag && panDrag.id === event.pointerId) {
+            preview.scrollLeft = panDrag.left - (event.clientX - panDrag.x);
+            preview.scrollTop = panDrag.top - (event.clientY - panDrag.y);
+        }
         if (compareDragging) updateComparisonFromPointer(event);
     });
     const finishComparison = event => {
+        if (panDrag && panDrag.id === event.pointerId) {
+            panDrag = null;
+            preview.style.cursor = panMode ? 'grab' : '';
+            preview.releasePointerCapture?.(event.pointerId);
+        }
         if (!compareDragging) return;
         compareDragging = false;
         preview.releasePointerCapture?.(event.pointerId);
     };
     preview.addEventListener('pointerup', finishComparison);
     preview.addEventListener('pointercancel', finishComparison);
+    preview.addEventListener('lostpointercapture', finishComparison);
+    panButton.addEventListener('click', () => {
+        panMode = !panMode;
+        panButton.setAttribute('aria-pressed', String(panMode));
+        panButton.classList.toggle('btn-gold', panMode);
+        preview.style.cursor = panMode ? 'grab' : '';
+        preview.style.touchAction = panMode ? 'none' : '';
+        if (panMode) { setRetouchMode(false); setLocalMaskMode(false); }
+    });
+    fitButton.addEventListener('click', () => { zoom.value = '100'; updateZoom(false); });
+    previewQuality.addEventListener('change', () => {
+        if (!sourceBitmap) return;
+        drawPreviewSource();
+        schedulePreview();
+    });
+    function showOriginal() {
+        if (!sourceBitmap || heldComparison !== null) return;
+        heldComparison = compare.value;
+        compare.value = '100';
+        compare.disabled = true;
+        originalButton.setAttribute('aria-pressed', 'true');
+        updateComparison();
+    }
+    function releaseOriginal() {
+        if (heldComparison === null) return;
+        compare.value = heldComparison;
+        heldComparison = null;
+        compare.disabled = false;
+        originalButton.setAttribute('aria-pressed', 'false');
+        updateComparison();
+    }
+    originalButton.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        originalButton.setPointerCapture?.(event.pointerId);
+        showOriginal();
+    });
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture', 'blur']) originalButton.addEventListener(name, releaseOriginal);
+    originalButton.addEventListener('keydown', event => {
+        if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); showOriginal(); }
+    });
+    originalButton.addEventListener('keyup', event => {
+        if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); releaseOriginal(); }
+    });
+    window.addEventListener('blur', releaseOriginal);
     denoise.addEventListener('input', () => { denoiseValue.value = denoiseLabels[Number(denoise.value)]; schedulePreview(); });
     for (const [control, output] of [[denoiseLuminance, denoiseLuminanceValue], [denoiseChroma, denoiseChromaValue], [denoiseDetail, denoiseDetailValue]]) {
         control.addEventListener('input', () => { output.value = control.value; schedulePreview(); });

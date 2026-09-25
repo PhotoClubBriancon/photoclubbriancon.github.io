@@ -595,6 +595,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                     <label for="photoLabZoom">Zoom de l’aperçu</label><output id="photoLabZoomValue">Ajusté à l’écran</output>
                     <input id="photoLabZoom" type="range" min="50" max="400" step="10" value="100" aria-label="Zoom de 50 à 400 pour cent">
                 </div>
+                <div class="photo-lab-actions" aria-label="Navigation dans la photo">
+                    <button type="button" class="btn btn-outline btn-sm" id="photoLabPan" aria-pressed="false">Main · déplacer</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="photoLabFit">Ajuster à l’écran</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="photoLabShowOriginal" aria-pressed="false">Maintenir : original</button>
+                </div>
+                <label for="photoLabPreviewQuality" class="photo-lab-section-note">Précision de l’aperçu</label>
+                <select id="photoLabPreviewQuality" class="photo-lab-select">
+                    <option value="1600">Rapide · 1 600 px</option>
+                    <option value="3200">Détaillé · 3 200 px pour examiner bruit et netteté</option>
+                </select>
+                <p class="photo-lab-section-note">Le mode Main permet de parcourir la photo agrandie. La précision de l’aperçu ne limite pas la taille de l’export.</p>
                 </div>
 
                 <aside class="photo-lab-sidebar" aria-label="Réglages photographiques">
@@ -607,6 +618,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
                             <summary>Histogramme RVB</summary>
                             <div class="photo-lab-section-body">
                                 <canvas class="photo-lab-histogram" id="photoLabHistogram" width="360" height="104" aria-label="Histogramme rouge, vert, bleu et luminosité"></canvas>
+                                <p id="photoLabTonalLimits" class="photo-lab-section-note">Les niveaux extrêmes apparaîtront après le calcul.</p>
                                 <p class="photo-lab-section-note">Mis à jour avec l’aperçu traité. Les pics à gauche représentent les ombres, ceux à droite les hautes lumières.</p>
                             </div>
                         </details>
@@ -2509,7 +2521,7 @@ function deleteGalleryImage(path) {
 })();
 </script>
 
-<script src="/photo_lab.js?v=20260915-watermark-1" defer></script>
+<script src="/photo_lab.js?v=20260925-preview-2" defer></script>
 <script src="/watermark_tool.js?v=20260915-design-4" defer></script>
 
 </body>
