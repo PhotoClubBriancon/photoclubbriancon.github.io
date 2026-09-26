@@ -126,8 +126,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; color: var(--gold); font-weight: 500; margin-bottom: 8px; }
-.form-group input, .form-group textarea { width: 100%; padding: 14px 18px; background: var(--dark-lighter); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 10px; color: var(--text); font-size: 16px; font-family: inherit; }
-.form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); }
+.form-group input, .form-group textarea, .form-group select { width: 100%; min-width:0; padding: 14px 18px; background: var(--dark-lighter); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 10px; color: var(--text); font-size: 16px; font-family: inherit; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--gold); }
 .form-group textarea { min-height: 150px; resize: vertical; }
 
 .btn { padding: 11px 26px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: .9rem; transition: all .2s; font-family: inherit; }
@@ -547,10 +547,40 @@ const csrfToken = "";
     });
 })();
 
-const recruitmentMessageField = document.getElementById('contact-message');
-if (recruitmentMessageField && new URLSearchParams(window.location.search).get('motif') === 'inscription-septembre' && !recruitmentMessageField.value) {
-    recruitmentMessageField.value = "Bonjour,\n\nJe souhaite en savoir plus pour rejoindre le Photo Club Briançonnais à la rentrée de septembre.\n\nMerci de me préciser les prochaines dates de rencontre.";
-}
+(() => {
+    const form = document.getElementById('contactForm');
+    if (!form) return;
+    const field = document.getElementById('contact-message');
+    const select = document.getElementById('contact-message-template');
+    const status = document.getElementById('contact-template-status');
+    const templates = {
+        custom: '',
+        visit: 'Bonjour,\n\nJe souhaite venir à une prochaine réunion pour découvrir le Photo Club Briançonnais avant de m’inscrire. Pourriez-vous me préciser la date, l’horaire et le lieu, ainsi que les modalités pour venir vous rencontrer ?\n\nMerci et à bientôt !',
+        join: 'Bonjour,\n\nJe souhaite adhérer au Photo Club Briançonnais. Pourriez-vous m’indiquer les démarches d’inscription et comment régler la cotisation annuelle de 30 € ?\n\nMerci pour votre aide !',
+        fees: 'Bonjour,\n\nJ’aimerais en savoir plus sur la cotisation annuelle de 30 €. Que comprend-elle et y a-t-il des frais supplémentaires à prévoir pour certaines activités ?\n\nMerci pour ces précisions !',
+        outings: 'Bonjour,\n\nJe suis intéressé(e) par les sorties photo du club. Pourriez-vous me renseigner sur les prochaines sorties, le niveau et le matériel nécessaires, ainsi que les conditions de participation ?\n\nMerci et à bientôt !',
+    };
+    // Keep edits in memory while switching topics; nothing is stored or sent before submission.
+    const drafts = new Map();
+    let previous = select.value;
+    select.addEventListener('change', () => {
+        drafts.set(previous, field.value);
+        const next = Object.hasOwn(templates, select.value) ? select.value : 'custom';
+        select.value = next;
+        field.value = drafts.has(next) ? drafts.get(next) : templates[next];
+        previous = next;
+        status.textContent = next === 'custom' ? 'Vous pouvez écrire votre message librement.' : 'Message prérempli : vous pouvez le modifier, puis cliquer sur Envoyer.';
+        field.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+    form.addEventListener('reset', () => {
+        drafts.clear(); previous = 'custom'; status.textContent = '';
+    });
+    document.getElementById('contact-message-choice').hidden = false;
+    if (new URLSearchParams(window.location.search).get('motif') === 'inscription-septembre' && !field.value) {
+        select.value = 'visit';
+        select.dispatchEvent(new Event('change'));
+    }
+})();
 function secureFetch(url, options = {}) {
     const headers = new Headers(options.headers || {});
     headers.set('X-CSRF-Token', csrfToken);
