@@ -8,6 +8,7 @@
     const logoInput = byId('watermarkLogo');
     const fontInput = byId('watermarkFontFile');
     const preview = byId('watermarkPreview');
+    const fullscreenButton = byId('watermarkFullscreen');
     const list = byId('watermarkFiles');
     const status = byId('watermarkStatus');
     const exportButton = byId('watermarkExport');
@@ -48,6 +49,7 @@
     };
     let files = [];
     let logoBitmap = null;
+    let logoGeneration = 0;
     let customFontUrl = null;
     let previewBitmap = null;
     let previewFile = null;
@@ -191,7 +193,8 @@
     }
 
     async function renderPreview() {
-        const generation = ++previewGeneration;
+        previewTimer = null;
+        const generation = previewGeneration;
         const file = files[0];
         if (!file) {
             previewBitmap?.close?.();
@@ -237,8 +240,9 @@
     }
 
     function schedulePreview() {
-        clearTimeout(previewTimer);
-        previewTimer = setTimeout(renderPreview, 120);
+        previewGeneration++;
+        if (previewTimer !== null) return;
+        previewTimer = requestAnimationFrame(renderPreview);
     }
 
     function updateFileList() {
@@ -461,16 +465,20 @@
         schedulePreview();
     });
     logoInput.addEventListener('change', async () => {
+        const generation = ++logoGeneration;
         logoBitmap?.close?.();
         logoBitmap = null;
+        schedulePreview();
         const file = logoInput.files?.[0];
         if (!file) return schedulePreview();
         if (file.type !== 'image/png') return report('Le logo doit être un PNG, idéalement à fond transparent.', true);
         try {
-            logoBitmap = await createImageBitmap(file);
+            const bitmap = await createImageBitmap(file);
+            if (generation !== logoGeneration) { bitmap.close?.(); return; }
+            logoBitmap = bitmap;
             schedulePreview();
         } catch (_) {
-            report('Logo PNG illisible.', true);
+            if (generation === logoGeneration) report('Logo PNG illisible.', true);
         }
     });
     fontInput.addEventListener('change', async () => {
@@ -532,6 +540,47 @@
     quality.addEventListener('input', () => byId('watermarkQualityValue').value = `${quality.value} %`);
     exportButton.addEventListener('click', () => exportSeries('jpeg', 95));
     advancedExport.addEventListener('click', () => exportSeries(advancedFormat.value, Number(quality.value)));
+    let previousOverflow = '';
+    function updateFullscreenButton() {
+        const expanded = document.fullscreenElement === root || root.classList.contains('is-expanded');
+        fullscreenButton.textContent = expanded ? '⤢ Quitter le plein écran' : '⛶ Plein écran';
+        fullscreenButton.setAttribute('aria-pressed', String(expanded));
+    }
+    function setPageFullscreen(enabled) {
+        if (enabled) {
+            previousOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = previousOverflow;
+        }
+        root.classList.toggle('is-expanded', enabled);
+        updateFullscreenButton();
+        fullscreenButton.focus({preventScroll:true});
+    }
+    fullscreenButton.addEventListener('click', async () => {
+        if (root.classList.contains('is-expanded')) return setPageFullscreen(false);
+        try {
+            if (document.fullscreenElement === root) await document.exitFullscreen();
+            else if (root.requestFullscreen && document.fullscreenEnabled) await root.requestFullscreen();
+            else setPageFullscreen(true);
+        } catch (_) {
+            // Some mobile browsers cannot fullscreen an HTML section: expand within the page.
+            if (document.fullscreenElement !== root) setPageFullscreen(true);
+        }
+        updateFullscreenButton();
+    });
+    document.addEventListener('fullscreenchange', updateFullscreenButton);
+    document.addEventListener('keydown', event => {
+        if (!root.classList.contains('is-expanded')) return;
+        if (event.key === 'Escape') { event.preventDefault(); setPageFullscreen(false); }
+        if (event.key === 'Tab') {
+            const controls = [...root.querySelectorAll('button,input,select,a[href]')].filter(el => !el.disabled && el.getClientRects().length);
+            const index = controls.indexOf(document.activeElement);
+            if (index < 0 || (!event.shiftKey && index === controls.length - 1) || (event.shiftKey && index === 0)) {
+                event.preventDefault(); controls[event.shiftKey ? controls.length - 1 : 0]?.focus();
+            }
+        }
+    });
     const jxlOption = advancedFormat.querySelector('option[value="jxl"]');
     const probe = document.createElement('canvas');
     probe.width = probe.height = 2;
