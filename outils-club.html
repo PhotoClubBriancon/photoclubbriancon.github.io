@@ -454,13 +454,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .watermark-positions { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
 .watermark-positions label { cursor:pointer; text-align:center; padding:8px 3px; background:#191919; border:1px solid rgba(212,175,55,.25); border-radius:6px; font-size:.74rem; }
 .watermark-positions label:has(input:checked) { color:#17120a; background:var(--gold); font-weight:700; }
-.watermark-positions input { position:absolute; opacity:0; }
+.watermark-positions label,.watermark-mode-switch label { position:relative; min-width:0; }
+.watermark-positions input,.watermark-mode-switch input { position:absolute; top:50%; left:50%; width:1px; height:1px; margin:0; padding:0; opacity:0; clip-path:inset(50%); }
 .watermark-positions label:focus-within { outline:2px solid #79d9b4; }
 .watermark-warning { font-size:.76rem; }
 .watermark-mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .watermark-fields .watermark-mode-switch label { display:block; text-align:center; padding:11px; cursor:pointer; color:var(--text); background:#191919; border:1px solid rgba(212,175,55,.35); border-radius:8px; }
 .watermark-mode-switch label:has(input:checked) { color:#17120a; background:var(--gold); font-weight:700; }
-.watermark-mode-switch input { position:absolute; opacity:0; }
+.watermark-layout > .watermark-fields { min-width:0; overflow-anchor:none; }
 .watermark-mode-switch label:focus-within,.watermark-font-samples button:focus-visible { outline:2px solid #79d9b4; }
 .watermark-font-samples { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; max-height:290px; overflow:auto; }
 .watermark-font-samples button { display:grid; gap:3px; min-width:0; padding:10px; text-align:left; color:var(--text); background:#171717; border:1px solid rgba(212,175,55,.24); border-radius:7px; cursor:pointer; }
@@ -620,6 +621,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
         <p style="color:var(--text-dim);margin-bottom:40px;">Outils pratiques pour les membres du Photo Club Brianconnais.</p>
 
 
+        <section class="photo-lab" aria-labelledby="lightcraftTestTitle">
+            <h2 id="lightcraftTestTitle">LightCraft — version d’essai</h2>
+            <p>Essayez un autre laboratoire photo, hébergé sur le site du club. Le traitement et la photothèque restent dans votre navigateur ; les connexions aux services externes sont bloquées dans cette version.</p>
+            <p><strong>Expérimental :</strong> privilégiez un ordinateur avec un navigateur récent et WebGL2. Conservez vos originaux : effacer les données du navigateur peut supprimer la photothèque locale. La compatibilité de chaque RAW, notamment Nikon Z6 III, reste à vérifier.</p>
+            <a class="btn btn-gold" href="/vendor/lightcraft-0.8.0/index.html" target="_blank" rel="noopener noreferrer">Essayer LightCraft dans un nouvel onglet</a>
+            <p class="photo-lab-section-note">Premier chargement : environ 44 Mo avant compression. Interface initialement en anglais. Import : File → Import Photos ; export : File → Export. Le laboratoire habituel reste disponible ci-dessous.</p>
+            <a href="https://github.com/storytold/lightcraft" target="_blank" rel="noopener noreferrer">LightCraft 0.8.0 — projet et licences MIT / Apache-2.0</a>
+        </section>
         <section class="photo-lab" id="photoLab">
             <div class="photo-lab-head">
                 <div>
