@@ -1815,6 +1815,13 @@ function copyCorrected() {
 }
 
 // AI Chat
+function appendChatMessage(container, role, text) {
+    const message = document.createElement('div');
+    message.className = 'chat-message ' + role;
+    message.textContent = String(text ?? '');
+    container.appendChild(message);
+}
+
 function sendChat() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
@@ -1824,7 +1831,7 @@ function sendChat() {
     chatMessageCount++;
 
     const messagesDiv = document.getElementById('chatMessages');
-    messagesDiv.innerHTML += '<div class="chat-message user">' + msg + '</div>';
+    appendChatMessage(messagesDiv, 'user', msg);
     input.value = '';
 
     document.getElementById('chatLoading').style.display = 'flex';
@@ -1840,7 +1847,7 @@ function sendChat() {
         document.getElementById('chatLoading').style.display = 'none';
         if (res.ok) {
             chatConversation += ' | AI: ' + res.response;
-            messagesDiv.innerHTML += '<div class="chat-message ai">' + res.response + '</div>';
+            appendChatMessage(messagesDiv, 'ai', res.response);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
             if (chatMessageCount >= 2) {
